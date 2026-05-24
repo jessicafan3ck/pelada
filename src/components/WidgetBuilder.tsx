@@ -76,6 +76,32 @@ const SEED_WIDGETS: SavedWidget[] = [
   },
 ];
 
+const WC2022_TEAMS = [
+  'Argentina','France','Brazil','England','Netherlands','Portugal',
+  'Morocco','Croatia','Spain','Japan','South Korea','USA',
+  'Senegal','Australia','Switzerland','Poland',
+];
+
+function buildWidgetPrompt(userRequest: string): string {
+  return `Generate a self-contained React widget for a football analytics dashboard.
+
+STRICT CODE RULES:
+- Define ONLY a function named Widget() — no imports, no exports
+- React hooks available in scope: useState, useEffect, useMemo, useRef
+- Recharts available: BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis
+- Use inline styles with dark theme (background #18181b, text #e4e4e7, muted #71717a, accent #a855f7)
+- Use ResponsiveContainer width="100%" height={300} for all charts — never hardcode a pixel width
+- Keep the widget under 80 lines to avoid truncation
+
+DATA & INTERACTIVITY RULES:
+- If the widget involves comparing teams, include a <select> dropdown for EACH team slot so the user can swap teams — default to real WC 2022 teams: ${WC2022_TEAMS.join(', ')}
+- If it involves players, include a player selector or at minimum show the top 5 by the relevant metric
+- All data must be hardcoded but realistic — use plausible WC 2022 stats (xG, shots, passes, possession %)
+- Pair every stat with a selector or label so the user knows which team/player it represents
+
+User request: ${userRequest}`;
+}
+
 const TEMPLATES = [
   { icon: BarChart3, label: 'Match Stats',         sub: 'Possession, xG, Shots',    hint: 'Bar chart comparing possession, xG, and shots on target for both teams' },
   { icon: PieChart,  label: 'Player Distribution', sub: 'Passing zones, Heatmaps',  hint: 'Pie chart showing passing zone breakdown by player position' },
@@ -124,7 +150,7 @@ export default function WidgetBuilder() {
       const res = await fetch('/api/langgraph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: q, history: widgetHistory, mode: 'widget' }),
+        body: JSON.stringify({ message: buildWidgetPrompt(q), history: widgetHistory, mode: 'widget' }),
       });
       const data = await res.json();
       if (data.code?.code) {

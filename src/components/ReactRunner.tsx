@@ -155,7 +155,7 @@ const ReactRunner = ({ code, height = 280 }: ReactRunnerProps) => {
         <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Live Preview</span>
         <div />
       </div>
-      <div className="overflow-auto p-4" style={{ height: height - 36 }}>
+      <div className="overflow-auto p-4" style={{ minHeight: height - 36 }}>
         <WidgetBoundary>
           <Widget />
         </WidgetBoundary>
