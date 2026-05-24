@@ -5,7 +5,12 @@ interface ReactRunnerProps {
   height?: number;
 }
 
+function stripFences(raw: string): string {
+  return raw.replace(/^```(?:jsx?|tsx?|javascript|typescript)?\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+}
+
 const ReactRunner = ({ code, height = 280 }: ReactRunnerProps) => {
+  const cleanCode = stripFences(code);
   const iframeContent = useMemo(() => `<!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +21,7 @@ const ReactRunner = ({ code, height = 280 }: ReactRunnerProps) => {
   <script src="https://unpkg.com/recharts@2.15.2/umd/recharts.min.js"></script>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    body { margin: 0; padding: 16px; background: #0d1117; color: #e4e4e7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     #root { width: 100%; }
     #error-display { color: #f87171; font-size: 12px; font-family: monospace; padding: 12px; white-space: pre-wrap; background: #1f0a0a; border-radius: 8px; margin: 8px; }
   </style>
@@ -35,7 +40,7 @@ const ReactRunner = ({ code, height = 280 }: ReactRunnerProps) => {
     } = Recharts;
 
     try {
-      ${code}
+      ${cleanCode}
 
       const rootEl = document.getElementById('root');
       const root = ReactDOM.createRoot(rootEl);
@@ -47,9 +52,9 @@ const ReactRunner = ({ code, height = 280 }: ReactRunnerProps) => {
     }
   </script>
 </body>
-</html>`, [code]);
+</html>`, [cleanCode]);
 
-  if (!code.trim()) {
+  if (!cleanCode) {
     return (
       <div className="rounded-xl border border-white/10 bg-black/20 flex items-center justify-center p-8 text-zinc-500 text-sm">
         No code to preview.
