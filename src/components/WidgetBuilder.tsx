@@ -76,6 +76,92 @@ const SEED_WIDGETS: SavedWidget[] = [
   },
 ];
 
+const GEN_MESSAGES = [
+  'Analyzing match data…',
+  'Designing visualization…',
+  'Working out the details…',
+  'Building chart structure…',
+  'Calibrating axes…',
+  'Populating WC 2022 stats…',
+  'Wiring up interactivity…',
+];
+
+function GeneratingPreview() {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [bars, setBars] = useState(() =>
+    Array.from({ length: 9 }, () => 18 + Math.random() * 65)
+  );
+
+  useEffect(() => {
+    const msgT = setInterval(() => setMsgIdx((i: number) => (i + 1) % GEN_MESSAGES.length), 1800);
+    const barT = setInterval(() => setBars(Array.from({ length: 9 }, () => 18 + Math.random() * 65)), 850);
+    return () => { clearInterval(msgT); clearInterval(barT); };
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#0d1117] overflow-hidden" style={{ minHeight: 320 }}>
+      <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
+        <div className="flex gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-red-500/40 border border-red-500/60" />
+          <span className="w-3 h-3 rounded-full bg-yellow-500/40 border border-yellow-500/60" />
+          <span className="w-3 h-3 rounded-full bg-green-500/40 border border-green-500/60" />
+        </div>
+        <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Live Preview</span>
+        <div />
+      </div>
+      <div className="p-5 flex flex-col" style={{ minHeight: 276 }}>
+        <div className="relative flex-1" style={{ minHeight: 220 }}>
+          <div className="absolute inset-0 flex flex-col justify-between pb-6 pointer-events-none">
+            {[0, 1, 2, 3].map((i: number) => (
+              <div key={i} className="w-full h-px bg-white/[0.05]" />
+            ))}
+          </div>
+          <div className="absolute inset-x-0 bottom-0 flex items-end gap-1.5 h-full px-1 pb-6">
+            {bars.map((h: number, i: number) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t"
+                style={{
+                  height: `${h}%`,
+                  background: 'linear-gradient(to top, rgba(168,85,247,0.55), rgba(168,85,247,0.15))',
+                  boxShadow: '0 0 10px rgba(168,85,247,0.25)',
+                  transition: `height ${0.6 + i * 0.04}s cubic-bezier(0.34,1.56,0.64,1)`,
+                }}
+              />
+            ))}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 flex gap-1.5 px-1 pb-0.5">
+            {bars.map((_: number, i: number) => (
+              <div key={i} className="flex-1 h-1.5 rounded bg-white/[0.06] animate-pulse" />
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 pt-4 border-t border-white/[0.04] mt-2">
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i: number) => (
+              <span
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-purple-400/80"
+                style={{ animation: `bounce 1.1s ease-in-out ${i * 0.18}s infinite` }}
+              />
+            ))}
+          </div>
+          <span
+            key={msgIdx}
+            className="text-xs text-zinc-500 font-mono"
+            style={{ animation: 'fadeIn 0.4s ease' }}
+          >
+            {GEN_MESSAGES[msgIdx]}
+          </span>
+        </div>
+      </div>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+    </div>
+  );
+}
+
 const WC2022_TEAMS = [
   'Argentina','France','Brazil','England','Netherlands','Portugal',
   'Morocco','Croatia','Spain','Japan','South Korea','USA',
@@ -98,6 +184,7 @@ DATA & INTERACTIVITY RULES:
 - If it involves players, include a player selector or at minimum show the top 5 by the relevant metric
 - All data must be hardcoded but realistic — use plausible WC 2022 stats (xG, shots, passes, possession %)
 - Pair every stat with a selector or label so the user knows which team/player it represents
+- Do NOT use emojis anywhere in the widget — no emoji in labels, tooltips, axis ticks, or text
 
 User request: ${userRequest}`;
 }
@@ -607,6 +694,8 @@ Respond ONLY with valid JSON, no other text: {"name": "...", "description": "...
                     {generatedCode}
                   </pre>
                 </div>
+              ) : generating ? (
+                <GeneratingPreview />
               ) : (
                 <div className="w-full h-64 bg-black/60 rounded-2xl border border-white/10 flex flex-col items-center justify-center gap-4 text-zinc-500">
                   <div className="p-4 bg-white/5 rounded-full border border-white/5">
