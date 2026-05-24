@@ -13,6 +13,16 @@ export function stripFences(raw: string): string {
     .trim();
 }
 
+// Strip import/export module syntax — invalid inside new Function() body
+function sanitizeForExec(code: string): string {
+  return code
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/\bexport\s+default\s+/g, '')
+    .replace(/\bexport\s+\{[^}]*\};?/g, '')
+    .trim();
+}
+
 function braceDepth(code: string): number {
   let depth = 0, inStr = false, strChar = '';
   for (let i = 0; i < code.length; i++) {
@@ -76,7 +86,7 @@ const ReactRunner = ({ code, height = 280 }: ReactRunnerProps) => {
     setWidget(null);
     try {
       const Babel = (window as any).Babel;
-      const { code: transformed } = Babel.transform(cleanCode, { presets: ['react'] });
+      const { code: transformed } = Babel.transform(sanitizeForExec(cleanCode), { presets: ['react'] });
 
       const rechartsArgs = RECHARTS_KEYS.map(k => (Recharts as Record<string, unknown>)[k]);
 
