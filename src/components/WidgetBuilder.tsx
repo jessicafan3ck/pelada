@@ -22,7 +22,7 @@ import {
   MoreHorizontal,
   Check,
 } from 'lucide-react';
-import ReactRunner, { stripFences } from './ReactRunner';
+import ReactRunner, { stripFences, buildWidgetSrcdoc } from './ReactRunner';
 
 const WIDGETS_KEY = 'pelada-widgets';
 
@@ -211,6 +211,7 @@ function encodeWidget(code: string): string {
 
 function DeployModal({ code, onClose }: { code: string; onClose: () => void }) {
   const [copied, setCopied] = useState<'url' | 'iframe' | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const embedUrl = `${EMBED_BASE}/?embed=${encodeWidget(code)}`;
   const iframeSnippet = `<iframe src="${embedUrl}" width="480" height="400" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
@@ -218,6 +219,18 @@ function DeployModal({ code, onClose }: { code: string; onClose: () => void }) {
     navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const downloadHtml = async () => {
+    setDownloading(true);
+    const html = buildWidgetSrcdoc(code);
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pelada-widget.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setDownloading(false);
   };
 
   return (
@@ -279,19 +292,29 @@ function DeployModal({ code, onClose }: { code: string; onClose: () => void }) {
         </div>
 
         {/* Deploy targets */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {[
-            { label: 'Website',    desc: 'Paste iframe code anywhere',      color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', Icon: Box },
-            { label: 'Notion',     desc: 'Use /Embed → paste URL',          color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',    Icon: Globe },
-            { label: 'TikTok Bio', desc: 'Drop the URL in your link-in-bio',color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',    Icon: Share2 },
+            { label: 'Website',     desc: 'Paste iframe anywhere',      color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', Icon: Box,      onClick: undefined },
+            { label: 'Notion',      desc: '/Embed → paste URL',         color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',    Icon: Globe,    onClick: undefined },
+            { label: 'TikTok Bio',  desc: 'Link-in-bio → URL',          color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',    Icon: Share2,   onClick: undefined },
+            { label: 'Download',    desc: 'Standalone HTML file',        color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',  Icon: Download, onClick: downloadHtml },
           ].map(t => (
-            <div key={t.label} className={`p-4 rounded-2xl border ${t.bg} text-center`}>
-              <t.Icon className={`w-5 h-5 mx-auto mb-2 ${t.color}`} />
+            <button
+              key={t.label}
+              onClick={t.onClick}
+              className={`p-4 rounded-2xl border ${t.bg} text-center transition-all ${t.onClick ? 'hover:brightness-125 cursor-pointer' : 'cursor-default'}`}
+            >
+              <t.Icon className={`w-5 h-5 mx-auto mb-2 ${t.color} ${downloading && t.label === 'Download' ? 'animate-bounce' : ''}`} />
               <div className="text-xs font-bold text-white">{t.label}</div>
               <div className="text-[10px] text-zinc-500 mt-1">{t.desc}</div>
-            </div>
+            </button>
           ))}
         </div>
+
+        {/* TikTok note */}
+        <p className="text-[11px] text-zinc-600 leading-relaxed border-t border-white/5 pt-4">
+          For TikTok: share the embed URL in your link-in-bio, or download the HTML, open it on your phone, and use TikTok's screen record to capture the widget interaction as a video. TikTok Effect House does not have a public publishing API.
+        </p>
       </div>
     </div>
   );
