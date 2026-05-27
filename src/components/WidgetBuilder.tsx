@@ -200,6 +200,103 @@ const AI_SUGGESTIONS = [
   { icon: BarChart3, color: 'bg-purple-500/20 text-purple-400', label: 'Historical Comparison', sub: 'Season vs Season, Player vs Player',          hint: 'Historical comparison chart showing season vs season or player vs player stat breakdown' },
 ];
 
+const EMBED_BASE = 'https://pelada-plum.vercel.app';
+
+function encodeWidget(code: string): string {
+  const bytes = new TextEncoder().encode(code);
+  let binary = '';
+  bytes.forEach(b => { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+
+function DeployModal({ code, onClose }: { code: string; onClose: () => void }) {
+  const [copied, setCopied] = useState<'url' | 'iframe' | null>(null);
+  const embedUrl = `${EMBED_BASE}/?embed=${encodeWidget(code)}`;
+  const iframeSnippet = `<iframe src="${embedUrl}" width="480" height="400" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
+
+  const copy = (text: string, type: 'url' | 'iframe') => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#0d0d0f] border border-white/10 rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl space-y-6"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+              <Globe className="w-5 h-5 text-cyan-400" />
+              Deploy Widget
+            </h2>
+            <p className="text-sm text-zinc-500 mt-1">The URL is the widget — no server required.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg text-zinc-500 hover:text-white transition-colors text-sm font-bold"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Embed URL */}
+        <div>
+          <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 block">Embed URL</label>
+          <div className="flex gap-2">
+            <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-cyan-400 truncate min-w-0">
+              {embedUrl}
+            </div>
+            <button
+              onClick={() => copy(embedUrl, 'url')}
+              className="shrink-0 px-4 py-2 bg-cyan-600/20 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-600/30 transition-colors text-xs font-bold flex items-center gap-2"
+            >
+              {copied === 'url' ? <Check className="w-4 h-4" /> : 'Copy'}
+            </button>
+          </div>
+        </div>
+
+        {/* iframe snippet */}
+        <div>
+          <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 block">Embed Code (iframe)</label>
+          <div className="flex gap-2">
+            <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-blue-300 truncate min-w-0">
+              {iframeSnippet}
+            </div>
+            <button
+              onClick={() => copy(iframeSnippet, 'iframe')}
+              className="shrink-0 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-xl text-blue-400 hover:bg-blue-600/30 transition-colors text-xs font-bold flex items-center gap-2"
+            >
+              {copied === 'iframe' ? <Check className="w-4 h-4" /> : 'Copy'}
+            </button>
+          </div>
+        </div>
+
+        {/* Deploy targets */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Website',    desc: 'Paste iframe code anywhere',      color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', Icon: Box },
+            { label: 'Notion',     desc: 'Use /Embed → paste URL',          color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',    Icon: Globe },
+            { label: 'TikTok Bio', desc: 'Drop the URL in your link-in-bio',color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',    Icon: Share2 },
+          ].map(t => (
+            <div key={t.label} className={`p-4 rounded-2xl border ${t.bg} text-center`}>
+              <t.Icon className={`w-5 h-5 mx-auto mb-2 ${t.color}`} />
+              <div className="text-xs font-bold text-white">{t.label}</div>
+              <div className="text-[10px] text-zinc-500 mt-1">{t.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WidgetBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('discovery');
   const [naturalLanguageInput, setNaturalLanguageInput] = useState('');
@@ -217,6 +314,7 @@ export default function WidgetBuilder() {
   const [published, setPublished] = useState(false);
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [deployOpen, setDeployOpen] = useState(false);
 
   useEffect(() => { setSavedWidgets(loadWidgets()); }, []);
 
@@ -582,6 +680,13 @@ Respond ONLY with valid JSON, no other text: {"name": "...", "description": "...
             >
               {published ? <><Check className="w-4 h-4" /> Saved!</> : <><Share2 className="w-4 h-4" /> Publish</>}
             </button>
+            <button
+              onClick={() => setDeployOpen(true)}
+              disabled={!generatedCode}
+              className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold text-white transition-all shadow-lg flex items-center gap-2"
+            >
+              <Globe className="w-4 h-4" /> Deploy
+            </button>
           </div>
         </div>
 
@@ -718,6 +823,9 @@ Respond ONLY with valid JSON, no other text: {"name": "...", "description": "...
   return (
     <div>
       {viewMode === 'discovery' ? renderDiscovery() : renderBuilder()}
+      {deployOpen && generatedCode && (
+        <DeployModal code={generatedCode} onClose={() => setDeployOpen(false)} />
+      )}
     </div>
   );
 }
