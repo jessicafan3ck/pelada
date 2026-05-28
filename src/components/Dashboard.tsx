@@ -14,16 +14,9 @@ interface DashboardProps {
 const WWC_START = new Date('2027-07-24');
 
 const RANKINGS = [
-  { rank: 1,  name: 'Bonmati_AI',    score: 3140, role: 'Analyst'   },
-  { rank: 2,  name: 'tactician_88',  score: 2980, role: 'Creator'   },
-  { rank: 3,  name: 'Pelada_Labs',   score: 2840, role: 'Developer' },
-  { rank: 4,  name: 'xG_Prophet',    score: 2790, role: 'Analyst'   },
-  { rank: 5,  name: 'jessica_fan',   score: 2740, role: 'Builder'   },
-  { rank: 6,  name: 'DataViz_Pro',   score: 2680, role: 'Creator'   },
-  { rank: 7,  name: 'ScoutMaster',   score: 2610, role: 'Scout'     },
-  { rank: 8,  name: 'Simeone_Fan',   score: 2550, role: 'Tactician' },
-  { rank: 9,  name: 'Analyst_Mike',  score: 2450, role: 'Analyst'   },
-  { rank: 10, name: 'City_Watcher',  score: 2410, role: 'Observer'  },
+  { rank: 1, name: 'Bonmati_AI',   score: 3140, role: 'Analyst'   },
+  { rank: 2, name: 'tactician_88', score: 2980, role: 'Creator'   },
+  { rank: 3, name: 'Pelada_Labs',  score: 2840, role: 'Developer' },
 ];
 
 const ARTIFACTS = [
