@@ -114,21 +114,32 @@ export default function ModelPlayground() {
   const [agentConnected, setAgentConnected] = useState(false);
   const [agentOutput, setAgentOutput] = useState<{ type: string; line: string }[]>([]);
   const [agentRunning, setAgentRunning] = useState(false);
+  const [agentWaiting, setAgentWaiting] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
   const agentOutputRef = useRef<HTMLDivElement>(null);
+
+  const copyCmd = (key: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCmd(key);
+    setTimeout(() => setCopiedCmd(null), 2000);
+  };
 
   useEffect(() => {
     const check = async () => {
       try {
         const r = await fetch(`${AGENT_URL}/health`, { signal: AbortSignal.timeout(2000) });
-        setAgentConnected(r.ok);
+        const ok = r.ok;
+        setAgentConnected(ok);
+        if (ok) setAgentWaiting(false);
       } catch {
         setAgentConnected(false);
       }
     };
     check();
-    const id = setInterval(check, 5000);
+    // Poll faster (1 s) while user is waiting for agent to start, normal (5 s) otherwise
+    const id = setInterval(check, agentWaiting ? 1000 : 5000);
     return () => clearInterval(id);
-  }, []);
+  }, [agentWaiting]);
 
   useEffect(() => {
     agentOutputRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -645,8 +656,55 @@ export default function ModelPlayground() {
         {/* Right column — Configuration + Agent Output */}
         <div className="w-1/2 flex flex-col gap-4 min-h-0">
 
-        {/* Agent Output Panel — shown when there's output */}
-        {agentOutput.length > 0 && (
+        {/* Agent install card — shown when offline */}
+        {!agentConnected && (
+          <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-5 space-y-4 shrink-0">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-indigo-500/10 rounded-lg shrink-0">
+                <Zap className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Pelada Agent</h3>
+                <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                  Run generated models on your machine. Your data never leaves.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { key: 'dl',  label: '1  Download', cmd: 'curl -O https://raw.githubusercontent.com/jessicafan3ck/Pelada/main/pelada-agent.py' },
+                { key: 'dep', label: '2  Install',  cmd: 'pip install flask flask-cors' },
+                { key: 'run', label: '3  Run',      cmd: 'python pelada-agent.py' },
+              ].map(({ key, label, cmd }) => (
+                <div key={key} className="rounded-xl bg-black/30 border border-white/5 px-3 py-2 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] text-zinc-600 uppercase tracking-wider font-bold mb-0.5">{label}</div>
+                    <code className="text-xs text-indigo-300 font-mono">{cmd}</code>
+                  </div>
+                  <button
+                    onClick={() => copyCmd(key, cmd)}
+                    className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                  >
+                    {copiedCmd === key ? '✓' : 'Copy'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setAgentWaiting(true)}
+              className="w-full py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold hover:bg-indigo-500/20 transition-colors flex items-center justify-center gap-2"
+            >
+              {agentWaiting
+                ? <><span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" /> Waiting for connection…</>
+                : "I've started the agent — connect"}
+            </button>
+          </div>
+        )}
+
+        {/* Agent output panel — shown when connected and output exists */}
+        {agentConnected && agentOutput.length > 0 && (
           <div className="bg-black/60 backdrop-blur-xl rounded-2xl border border-green-500/20 flex flex-col overflow-hidden max-h-64 shrink-0">
             <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-white/[0.02]">
               <Terminal className="w-3.5 h-3.5 text-green-400" />
