@@ -15,6 +15,7 @@ import BenchmarkBuilder from './components/BenchmarkBuilder';
 import PeladaAgent from './components/PeladaAgent';
 import LineupView from './components/LineupView';
 import ContextPanel from './components/ContextPanel';
+import MCMCSimulation from './components/MCMCSimulation';
 import MatchContextBar from './components/MatchContextBar';
 import CommunityLibrary from './components/CommunityLibrary';
 import PlayerSimilarity from './components/visualizations/PlayerSimilarity';
@@ -26,7 +27,8 @@ import { AppContextProvider, useAppContext } from './context/AppContext';
 type ViewType =
   | 'dashboard' | 'copilot' | 'tactics' | 'models' | 'widgets'
   | 'benchmarks' | 'formation' | 'history' | 'calendar'
-  | 'lineup' | 'community' | 'similarity' | 'goatbuilder' | 'lineupvalidator';
+  | 'lineup' | 'community' | 'similarity' | 'goatbuilder' | 'lineupvalidator'
+  | 'simulation';
 
 function AppShell() {
   const [currentView, setCurrentView] = useState<ViewType>('lineup');
@@ -51,6 +53,7 @@ function AppShell() {
     { id: 'models' as ViewType,     name: 'Model Sandbox',     icon: Cpu,         category: 'Analyst',  analystOnly: true  },
     { id: 'benchmarks' as ViewType, name: 'Benchmarks',        icon: Activity,    category: 'Analyst',  analystOnly: true  },
     { id: 'formation' as ViewType,  name: 'Formation Analysis',icon: FlaskConical,category: 'Analyst',  analystOnly: true  },
+    { id: 'simulation' as ViewType, name: 'Match Simulation',  icon: Activity,    category: 'Analyst',  analystOnly: true  },
     { id: 'history' as ViewType,    name: 'Historical Data',   icon: Database,    category: 'Analyst',  analystOnly: true  },
   ];
 
@@ -72,6 +75,7 @@ function AppShell() {
       case 'benchmarks':  return <BenchmarkBuilder />;
       case 'calendar':    return <CalendarView />;
       case 'formation':   return <FormationAnalysis />;
+      case 'simulation':  return <MCMCSimulation />;
       case 'history':     return <HistoricalAnalysis />;
       default:            return <Dashboard onOpenAgent={() => setCurrentView('copilot')} />;
     }
