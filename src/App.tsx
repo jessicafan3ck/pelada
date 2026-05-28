@@ -19,15 +19,13 @@ import MCMCSimulation from './components/MCMCSimulation';
 import MatchContextBar from './components/MatchContextBar';
 import CommunityLibrary from './components/CommunityLibrary';
 import PlayerSimilarity from './components/visualizations/PlayerSimilarity';
-import GoatBuilder from './components/fan/GoatBuilder';
-import LineupValidator from './components/fan/LineupValidator';
 import { DataContextProvider } from './context/DataContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
 
 type ViewType =
   | 'dashboard' | 'copilot' | 'tactics' | 'models' | 'widgets'
   | 'benchmarks' | 'formation' | 'history' | 'calendar'
-  | 'lineup' | 'community' | 'similarity' | 'goatbuilder' | 'lineupvalidator'
+  | 'lineup' | 'community' | 'similarity'
   | 'simulation';
 
 // Per-category accent colours — full static strings so Tailwind JIT includes them
@@ -39,7 +37,7 @@ const CATEGORY_ACCENT = {
 } as const;
 
 function AppShell() {
-  const [currentView, setCurrentView] = useState<ViewType>('lineup');
+  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { userMode, setUserMode, copilotQuery } = useAppContext();
 
@@ -54,8 +52,6 @@ function AppShell() {
     { id: 'similarity' as ViewType, name: 'Scout',             icon: GitBranch,   category: 'Explore',  analystOnly: false },
 
     { id: 'calendar' as ViewType,   name: 'Match Calendar',    icon: Calendar,    category: 'Explore',  analystOnly: false },
-    { id: 'goatbuilder' as ViewType,    name: 'GOAT Builder',      icon: Zap,         category: 'Create',   analystOnly: false },
-    { id: 'lineupvalidator' as ViewType, name: 'Lineup Validator', icon: Users2,      category: 'Create',   analystOnly: false },
     { id: 'widgets' as ViewType,    name: 'Widget Builder',    icon: Box,         category: 'Create',   analystOnly: false },
     { id: 'tactics' as ViewType,    name: 'Tactics Studio',    icon: Target,      category: 'Analyst',  analystOnly: true  },
     { id: 'models' as ViewType,     name: 'Model Sandbox',     icon: Cpu,         category: 'Analyst',  analystOnly: true  },
@@ -74,8 +70,6 @@ function AppShell() {
       case 'copilot':     return <PeladaAgent onNavigate={setCurrentView} currentView={currentView} isOpen={true} onOpenChange={() => {}} fullPage />;
       case 'lineup':      return <LineupView />;
       case 'similarity':   return <PlayerSimilarity />;
-      case 'goatbuilder':     return <GoatBuilder />;
-      case 'lineupvalidator': return <LineupValidator />;
       case 'community':   return <CommunityLibrary />;
       case 'tactics':     return <TacticsView />;
       case 'models':      return <ModelPlayground />;
