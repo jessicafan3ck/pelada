@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, Star, Sparkles, Cpu, Box, BarChart2,
-  Target, Layout, Download, Activity, Shield,
-  TrendingUp, Calendar,
+  Target, Layout, Download, Activity, Shield, Calendar,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -90,7 +89,7 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
     : ARTIFACTS.filter(a => a.type === activeCategory);
 
   return (
-    <div className="space-y-10 pb-10">
+    <div className="space-y-6 pb-10">
 
       {/* ── WWC 2027 Hero ────────────────────────────────────────────────────── */}
       <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: '180px' }}>
@@ -112,7 +111,7 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
           <rect width="100%" height="100%" fill="url(#wwc-chevrons)" />
         </svg>
 
-        <div className="relative z-10 flex items-center justify-between px-10 py-9">
+        <div className="relative z-10 flex items-center justify-between px-10 py-5">
           {/* Left: wordmark */}
           <div>
             <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.28em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '10px' }}>
@@ -150,7 +149,7 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
 
         {/* Match Center — 8 col */}
         <div className="col-span-12 lg:col-span-8">
-          <div className="bg-black/40 backdrop-blur-2xl rounded-[32px] border border-white/5 overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative flex flex-col min-h-[420px]">
+          <div className="bg-black/40 backdrop-blur-2xl rounded-[32px] border border-white/5 overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative flex flex-col min-h-[300px]">
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
             {/* Header */}
@@ -256,30 +255,6 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
         <div className="col-span-12 lg:col-span-4">
           <div className="bg-black/40 backdrop-blur-2xl rounded-[32px] border border-white/5 p-8 h-full flex flex-col shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-[50px] rounded-full pointer-events-none" />
-
-            <div className="text-xs font-bold text-zinc-500 mb-5 uppercase tracking-[0.15em] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-zinc-600" /> Community Pulse
-            </div>
-            <div className="space-y-3 mb-6">
-              <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5 hover:bg-white/[0.06] transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-1.5">
-                  <div className="p-1.5 bg-purple-500/10 rounded-lg"><TrendingUp className="w-3.5 h-3.5 text-purple-400" /></div>
-                  <span className="text-xs font-bold text-white">Most Downloaded</span>
-                </div>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  "GOAT XI Builder — WWC Edition" trending with 19k+ downloads.
-                </p>
-              </div>
-              <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5 hover:bg-white/[0.06] transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-1.5">
-                  <div className="p-1.5 bg-cyan-500/10 rounded-lg"><Activity className="w-3.5 h-3.5 text-cyan-400" /></div>
-                  <span className="text-xs font-bold text-white">New Model</span>
-                </div>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  @Bonmati_AI published Flair Index v2 with WWC 2027 squad data.
-                </p>
-              </div>
-            </div>
 
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
