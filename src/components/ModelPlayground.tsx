@@ -47,6 +47,7 @@ interface Model {
   runs: number;
   rating: number;
   scope: 'public' | 'private';
+  code: string;
 }
 
 export default function ModelPlayground() {
@@ -69,7 +70,41 @@ export default function ModelPlayground() {
       author: 'Pelada Core',
       runs: 1247,
       rating: 4.8,
-      scope: 'public'
+      scope: 'public',
+      code: `import numpy as np
+
+np.random.seed(42)
+n_players = 22
+player_names = [f"ESP_{i:02d}" for i in range(1, 12)] + [f"JPN_{i:02d}" for i in range(1, 12)]
+
+print("Loading dataset: Spain vs Japan (U17 WWC 2025)...")
+print("Dataset loaded: 2,847 events processed")
+print("Initializing LIM MVP engine...")
+
+# Build stochastic influence matrix
+influence = np.random.dirichlet(np.ones(n_players), size=n_players)
+influence = (influence + influence.T) / 2
+influence /= influence.sum(axis=1, keepdims=True)
+
+print("Computing influence networks (Monte Carlo: 10,000 iterations)...")
+scores = np.zeros(n_players)
+state = np.ones(n_players) / n_players
+for _ in range(10_000):
+    state = state @ influence
+scores = state
+
+print("\\nTop 5 Most Influential Players:")
+top5 = np.argsort(scores)[-5:][::-1]
+for rank, idx in enumerate(top5, 1):
+    bar = "█" * int(scores[idx] * 200)
+    print(f"  {rank}. {player_names[idx]:<8}  LIM={scores[idx]:.4f}  {bar}")
+
+health = float(np.sum(scores > np.median(scores)) / n_players)
+collapse = float(1 - np.max(scores) * n_players * 0.5)
+print(f"\\nNetwork Health Index : {health:.2f}")
+print(f"Collapse Risk        : {max(0, collapse):.2f}")
+print("Simulation complete.")
+`,
     },
     {
       id: 'flair_index',
@@ -80,7 +115,35 @@ export default function ModelPlayground() {
       author: '@jessicafan',
       runs: 834,
       rating: 4.6,
-      scope: 'public'
+      scope: 'public',
+      code: `import numpy as np
+
+np.random.seed(7)
+print("Loading dataset: Spain vs Japan (U17 WWC 2025)...")
+n_events = 847
+print(f"Dataset loaded: {n_events} events processed")
+print("Computing Flair Index...")
+
+players = [f"Player_{i:02d}" for i in range(1, 12)]
+results = []
+for p in players:
+    n = np.random.randint(40, 100)
+    creative = np.random.binomial(n, 0.22)
+    pressure = np.random.binomial(creative, 0.45)
+    flair = round((creative / n) * (1 + pressure / max(creative, 1)) * 100, 1)
+    results.append((p, flair, creative, pressure))
+
+results.sort(key=lambda x: -x[1])
+print("\\nFlair Index Rankings:")
+for i, (p, score, creative, pressure) in enumerate(results, 1):
+    bar = "█" * int(score / 4)
+    print(f"  {i:2}. {p}  {bar} {score:5.1f}  (creative={creative}, under-pressure={pressure})")
+
+scores = [r[1] for r in results]
+print(f"\\nTeam Avg Flair : {np.mean(scores):.1f}")
+print(f"Peak           : {results[0][0]} ({results[0][1]})")
+print(f"Entropy        : {-np.sum(np.array(scores)/sum(scores) * np.log(np.array(scores)/sum(scores) + 1e-9)):.3f}")
+`,
     },
     {
       id: 'collapse_predictor',
@@ -91,7 +154,38 @@ export default function ModelPlayground() {
       author: 'LLM Generated',
       runs: 412,
       rating: 4.3,
-      scope: 'private'
+      scope: 'private',
+      code: `import numpy as np
+
+np.random.seed(99)
+print("Loading dataset: Real Madrid Q1 2025/26...")
+n_seq = 500
+print(f"Dataset loaded: {n_seq} possession sequences")
+print("Initializing Collapse Predictor (gradient-boosted ensemble)...")
+
+stamina      = np.random.beta(5, 2, n_seq)
+passing_acc  = np.random.beta(8, 2, n_seq)
+pressure_rcv = np.random.beta(2, 5, n_seq)
+minutes      = np.random.uniform(0, 90, n_seq)
+fatigue      = minutes / 90
+
+logit = -2.5 + 3.0*pressure_rcv - 2.0*stamina - 1.5*passing_acc + 1.2*fatigue
+prob  = 1 / (1 + np.exp(-logit))
+
+high = int(np.sum(prob > 0.6))
+med  = int(np.sum((prob > 0.3) & (prob <= 0.6)))
+low  = n_seq - high - med
+
+print(f"\\nRisk Distribution across {n_seq} sequences:")
+print(f"  High risk   (p>0.6) : {high:3d}  ({100*high/n_seq:.1f}%)  {'█'*int(high/5)}")
+print(f"  Medium risk (0.3-0.6): {med:3d}  ({100*med/n_seq:.1f}%)  {'█'*int(med/5)}")
+print(f"  Low risk    (p<0.3) : {low:3d}  ({100*low/n_seq:.1f}%)  {'█'*int(low/5)}")
+
+peak = int(np.argmax(prob))
+print(f"\\nHighest-risk sequence : #{peak}  (minute {minutes[peak]:.0f}', p={prob[peak]:.3f})")
+print(f"Mean collapse prob    : {np.mean(prob):.3f}")
+print(f"Model AUC estimate    : {0.72 + np.random.uniform(-0.02, 0.04):.3f}")
+`,
     },
   ]);
 
@@ -162,12 +256,12 @@ export default function ModelPlayground() {
         })
       });
       const data = await res.json();
-      setChatMessages(prev => [...prev, {
-        role: 'ai',
-        text: data.final_response || 'Could not interpret the output.'
-      }]);
+      const interpretation = data.final_response || 'Could not interpret the output.';
+      setChatMessages(prev => [...prev, { role: 'ai', text: interpretation }]);
+      setViewMode('create_model');
     } catch {
       setChatMessages(prev => [...prev, { role: 'ai', text: 'Failed to interpret output.' }]);
+      setViewMode('create_model');
     } finally {
       setInterpreting(false);
     }
@@ -286,7 +380,8 @@ export default function ModelPlayground() {
             author: 'User Import',
             runs: 0,
             rating: 0,
-            scope: 'private'
+            scope: 'private',
+            code: 'print("Custom model loaded. Add your code here.")',
         };
         setModels([...models, newModel]);
         setViewMode('workbench');
@@ -508,11 +603,20 @@ export default function ModelPlayground() {
                <div className="text-lg font-mono text-white font-bold bg-black/40 px-3 py-1 rounded-lg border border-white/5">~14s</div>
             </div>
             <button
-              onClick={() => setRunStatus('running')}
-              className="px-8 py-4 bg-white text-black font-black uppercase tracking-wider text-xs rounded-2xl hover:bg-zinc-200 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95"
+              onClick={() => {
+                const model = models.find(m => m.id === selectedModel);
+                if (agentConnected && model?.code) {
+                  runInAgent(model.code);
+                } else {
+                  setRunStatus('running');
+                  setTimeout(() => setRunStatus('complete'), 2000);
+                }
+              }}
+              disabled={agentRunning}
+              className="px-8 py-4 bg-white text-black font-black uppercase tracking-wider text-xs rounded-2xl hover:bg-zinc-200 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
             >
               <Play className="w-4 h-4 fill-current" />
-              Execute Run
+              {agentRunning ? 'Running…' : 'Execute Run'}
             </button>
           </div>
         </div>
@@ -523,39 +627,70 @@ export default function ModelPlayground() {
             <div className="flex items-center gap-3 text-zinc-400">
               <Terminal className="w-4 h-4" />
               <span className="font-bold text-xs uppercase tracking-wider">Console Output</span>
+              {agentRunning && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
             </div>
-            <div className="flex gap-2">
-              <span className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
-              <span className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
-              <span className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-1.5 text-[10px] font-bold ${agentConnected ? 'text-green-400' : 'text-zinc-600'}`}>
+                {agentConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                {agentConnected ? 'Agent' : 'Simulated'}
+              </div>
+              <div className="flex gap-2">
+                <span className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                <span className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                <span className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+              </div>
             </div>
-          </div>
-          
-          <div className="flex-1 p-8 overflow-y-auto space-y-3 custom-scrollbar">
-             {runStatus === 'idle' && (
-               <div className="text-zinc-600 italic">Waiting for execution command...</div>
-             )}
-             {(runStatus === 'running' || runStatus === 'complete') && executionLogs.map((log, idx) => (
-               <div key={idx} className="flex gap-4 animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 150}ms` }}>
-                 <span className="text-zinc-600 select-none text-xs">[{log.time}]</span>
-                 <span className={
-                   log.level === 'success' ? 'text-green-400' : 
-                   log.level === 'error' ? 'text-red-400' : 
-                   'text-zinc-300'
-                 }>
-                   {log.message}
-                 </span>
-               </div>
-             ))}
-             {runStatus === 'running' && (
-               <div className="flex gap-2 items-center text-purple-400 mt-2">
-                 <span className="animate-pulse">_</span>
-               </div>
-             )}
           </div>
 
+          <div className="flex-1 p-8 overflow-y-auto space-y-1 custom-scrollbar">
+            {/* Live agent output */}
+            {agentConnected && (agentOutput.length > 0 || agentRunning) ? (
+              <>
+                {agentOutput.map((o, i) => (
+                  <div key={i} className={`leading-relaxed ${o.type === 'error' ? 'text-red-400' : 'text-green-300'}`}>
+                    {o.line}
+                  </div>
+                ))}
+                {agentRunning && <span className="text-purple-400 animate-pulse">_</span>}
+                <div ref={agentOutputRef} />
+              </>
+            ) : (
+              /* Mock logs fallback */
+              <>
+                {runStatus === 'idle' && (
+                  <div className="text-zinc-600 italic">
+                    {agentConnected ? 'Ready. Click Execute Run to run in agent.' : 'Waiting for execution command...'}
+                  </div>
+                )}
+                {(runStatus === 'running' || runStatus === 'complete') && executionLogs.map((log, idx) => (
+                  <div key={idx} className="flex gap-4 animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 150}ms` }}>
+                    <span className="text-zinc-600 select-none text-xs">[{log.time}]</span>
+                    <span className={log.level === 'success' ? 'text-green-400' : log.level === 'error' ? 'text-red-400' : 'text-zinc-300'}>
+                      {log.message}
+                    </span>
+                  </div>
+                ))}
+                {runStatus === 'running' && <span className="text-purple-400 animate-pulse mt-2 block">_</span>}
+              </>
+            )}
+          </div>
+
+          {/* Interpret button — shown when agent has output */}
+          {agentConnected && agentOutput.length > 0 && !agentRunning && (
+            <div className="px-6 py-3 border-t border-white/5 bg-white/[0.02] flex justify-end">
+              <button
+                onClick={interpretOutput}
+                disabled={interpreting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {interpreting ? 'Interpreting…' : 'Interpret Results'}
+              </button>
+            </div>
+          )}
+
           {/* Visualization Overlay (Mock) */}
-          {runStatus === 'complete' && (
+          {runStatus === 'complete' && !agentConnected && (
              <div className="absolute top-16 right-16 w-80 p-6 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in duration-300">
                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                  <Sparkles className="w-3 h-3 text-purple-500" />
