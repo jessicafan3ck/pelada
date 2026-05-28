@@ -44,7 +44,7 @@ function AppShell() {
     { id: 'copilot' as ViewType,    name: 'Co-Pilot',          icon: MessageSquare, category: 'General', analystOnly: false },
     { id: 'lineup' as ViewType,      name: 'Lineup',            icon: Users2,      category: 'Explore',  analystOnly: false },
     { id: 'similarity' as ViewType, name: 'Scout',             icon: GitBranch,   category: 'Explore',  analystOnly: false },
-    { id: 'community' as ViewType,  name: 'Community',         icon: Globe,       category: 'Explore',  analystOnly: false },
+
     { id: 'calendar' as ViewType,   name: 'Match Calendar',    icon: Calendar,    category: 'Explore',  analystOnly: false },
     { id: 'goatbuilder' as ViewType,    name: 'GOAT Builder',      icon: Zap,         category: 'Create',   analystOnly: false },
     { id: 'lineupvalidator' as ViewType, name: 'Lineup Validator', icon: Users2,      category: 'Create',   analystOnly: false },

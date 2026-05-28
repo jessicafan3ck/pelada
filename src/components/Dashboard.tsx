@@ -10,7 +10,8 @@ interface DashboardProps {
   onNavigate: (view: string) => void;
 }
 
-const WWC_START = new Date('2027-07-24T00:00:00');
+// date-only string → parsed as UTC midnight, avoiding timezone off-by-one
+const WWC_START = new Date('2027-07-24');
 
 const RANKINGS = [
   { rank: 1,  name: 'Bonmati_AI',    score: 3140, role: 'Analyst'   },
@@ -93,36 +94,47 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
   return (
     <div className="space-y-10 pb-10">
 
-      {/* ── WWC Banner ───────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-white/5 bg-black/40 px-8 py-5 flex items-center justify-between backdrop-blur-xl">
-        <div className="flex items-center gap-8">
+      {/* ── WWC 2027 Hero ────────────────────────────────────────────────────── */}
+      <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: '180px' }}>
+        {/* Teal base */}
+        <div className="absolute inset-0" style={{ background: '#00C2A8' }} />
+        {/* Hot pink diagonal block */}
+        <div
+          className="absolute right-0 top-0 bottom-0"
+          style={{ width: '48%', background: '#E8197D', clipPath: 'polygon(28% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
+        />
+        {/* Chevron pattern overlay */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.07 }} aria-hidden="true">
+          <defs>
+            <pattern id="wwc-chevrons" x="0" y="0" width="80" height="56" patternUnits="userSpaceOnUse">
+              <polyline points="0,0 40,28 80,0"  stroke="black" strokeWidth="7" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              <polyline points="0,28 40,56 80,28" stroke="black" strokeWidth="7" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#wwc-chevrons)" />
+        </svg>
+
+        <div className="relative z-10 flex items-center justify-between px-10 py-9">
+          {/* Left: wordmark */}
           <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-1">
-              Women's World Cup 2027 · Brazil
+            <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.28em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '10px' }}>
+              FIFA Women's World Cup · Brasil 2027
             </div>
-            <div className="text-3xl font-black text-white tracking-tight">
-              Vai Ser <span className="text-cyan-400">Épico.</span>
+            <div style={{ fontSize: '68px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: '0.85' }}>
+              GO<br />EPIC.
             </div>
           </div>
-          <div className="w-px h-12 bg-white/10" />
-          <div className="flex items-center gap-8">
-            <div className="text-center">
-              <div className="text-3xl font-black text-white tabular-nums">{days}</div>
-              <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-0.5">Days Away</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-black text-white">32</div>
-              <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-0.5">Teams</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-black text-white">64</div>
-              <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-0.5">Matches</div>
-            </div>
+
+          {/* Right: stats */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '36px', marginRight: '8px' }}>
+            {([{ n: days, l: 'Days Away' }, { n: 32, l: 'Teams' }, { n: 64, l: 'Matches' }] as const).map(({ n, l }) => (
+              <div key={l} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '50px', fontWeight: 900, color: '#000', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{n}</div>
+                <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '6px' }}>{l}</div>
+              </div>
+            ))}
           </div>
         </div>
-        <p className="text-xs text-zinc-600 max-w-[220px] text-right leading-relaxed">
-          AI-powered football analytics built for the biggest women's tournament in history.
-        </p>
       </div>
 
       {/* ── Main Grid ────────────────────────────────────────────────────────── */}
