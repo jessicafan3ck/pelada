@@ -60,8 +60,8 @@ export default function EmbedPlayer() {
       if (!Babel) { setError('Babel runtime not available.'); return; }
 
       const { code: transformed } = Babel.transform(code, {
-        presets: ['react'],
-        sourceType: 'script',
+        presets: ['react', 'typescript'],
+        sourceType: 'module',
       });
 
       const rechartsVals = RECHARTS_KEYS.map(k => (Recharts as Record<string, unknown>)[k]);

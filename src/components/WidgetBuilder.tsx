@@ -179,6 +179,7 @@ STRICT CODE RULES:
 - Use inline styles with dark theme (background #18181b, text #e4e4e7, muted #71717a, accent #a855f7)
 - Use ResponsiveContainer width="100%" height={300} for all charts — never hardcode a pixel width
 - Keep the widget under 80 lines to avoid truncation
+- Do NOT use TypeScript — no type annotations, no interfaces, no generics, plain JavaScript only
 
 DATA & INTERACTIVITY RULES:
 - If the widget involves comparing teams, include a <select> dropdown for EACH team slot so the user can swap teams — default to real WC 2022 teams: ${WC2022_TEAMS.join(', ')}
