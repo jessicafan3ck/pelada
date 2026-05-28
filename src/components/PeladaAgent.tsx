@@ -2,13 +2,33 @@ import React, { useState, useEffect, useRef, useCallback, useContext } from 'rea
 import { useAppContext } from '../context/AppContext';
 import { DataContext } from '../context/DataContext';
 import {
-  X, Send, Sparkles, Bot, ArrowRight, Maximize2, Minimize2, User, Zap
+  X, Send, Sparkles, Bot, ArrowRight, Maximize2, Minimize2, User, Zap, Search,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import PassMap from './visualizations/PassMap';
 import PressureTimeline from './visualizations/PressureTimeline';
 import QuadrantPlot from './visualizations/QuadrantPlot';
 import SetPieceAnalysis from './visualizations/SetPieceAnalysis';
+
+const LIBRARY_ITEMS = [
+  { id:  1, type: 'widget',    title: 'xG Momentum Flow',            author: 'DataViz_Pro',   downloads: '8.2k', rating: 4.9, tags: ['Visualization','xG'],      color: '#2B3F9E', dark: '#0d1832', nav: 'widgets'   },
+  { id:  2, type: 'model',     title: 'Collapse Predictor v2',       author: 'Pelada_Labs',   downloads: '5.1k', rating: 4.8, tags: ['ML','Defense'],             color: '#C2298A', dark: '#2a0020', nav: 'models'    },
+  { id:  3, type: 'tactics',   title: 'Inverted Wingback Overload',  author: 'tactician_88',  downloads: '12k',  rating: 4.7, tags: ['Pressing','Width'],         color: '#E53935', dark: '#2a0808', nav: 'tactics'   },
+  { id:  4, type: 'widget',    title: 'GOAT XI Builder — WWC',       author: 'jessica_fan',   downloads: '19k',  rating: 5.0, tags: ['Fan','Interactive'],        color: '#C9D426', dark: '#1a2000', nav: 'widgets'   },
+  { id:  5, type: 'model',     title: 'Flair Index — WWC 2027',      author: 'xG_Prophet',    downloads: '3.4k', rating: 4.6, tags: ['Creativity','Player'],      color: '#4CAF50', dark: '#082008', nav: 'models'    },
+  { id:  6, type: 'formation', title: '3-4-3 Barcelona Replica',     author: 'Bonmati_AI',    downloads: '9.8k', rating: 4.8, tags: ['Positional','Press'],       color: '#F04A36', dark: '#2a1000', nav: 'formation' },
+  { id:  7, type: 'widget',    title: 'Match Heat Map',              author: 'HeatMap_Pro',   downloads: '4.1k', rating: 4.5, tags: ['Visualization','Heat'],     color: '#4FC3F7', dark: '#0a2030', nav: 'widgets'   },
+  { id:  8, type: 'model',     title: 'Pass Network Graph',          author: 'GraphML',       downloads: '2.9k', rating: 4.4, tags: ['Network','Passing'],        color: '#F5C418', dark: '#2a2000', nav: 'models'    },
+  { id:  9, type: 'tactics',   title: 'High Press Trigger Zones',    author: 'PressKing',     downloads: '7.3k', rating: 4.6, tags: ['Press','Defending'],        color: '#F04A36', dark: '#2a0808', nav: 'tactics'   },
+  { id: 10, type: 'widget',    title: 'Player Radar Chart',          author: 'RadarKing',     downloads: '6.8k', rating: 4.7, tags: ['Player','Stats'],           color: '#C2298A', dark: '#200015', nav: 'widgets'   },
+  { id: 11, type: 'formation', title: '4-3-3 High Block Counter',    author: 'CounterKing',   downloads: '5.6k', rating: 4.5, tags: ['Counter','Block'],          color: '#2B3F9E', dark: '#0a1020', nav: 'formation' },
+  { id: 12, type: 'formation', title: '3-5-2 Wing Overload',         author: 'WingMaster',    downloads: '3.2k', rating: 4.3, tags: ['Width','Attack'],           color: '#4CAF50', dark: '#082008', nav: 'formation' },
+  { id: 13, type: 'model',     title: 'Aerial Duel Predictor',       author: 'AerialAI',      downloads: '1.8k', rating: 4.2, tags: ['Set Piece','Physical'],     color: '#E53935', dark: '#200808', nav: 'models'    },
+  { id: 14, type: 'tactics',   title: 'Low Block 4-4-2 Compact',     author: 'DefenseMaster', downloads: '8.9k', rating: 4.5, tags: ['Defending','Low Block'],    color: '#4FC3F7', dark: '#081828', nav: 'tactics'   },
+  { id: 15, type: 'widget',    title: 'Live xG Gauge',               author: 'LiveStats',     downloads: '11k',  rating: 4.8, tags: ['Live','xG'],                color: '#C9D426', dark: '#182000', nav: 'widgets'   },
+];
+
+type LibFilter = 'all' | 'widget' | 'model' | 'tactics' | 'formation';
 
 type Message = {
   id: string;
@@ -106,6 +126,12 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [copilotTab, setCopilotTab] = useState<'chat' | 'library'>('chat');
+  const [libSearch, setLibSearch] = useState('');
+  const [libFilter, setLibFilter] = useState<LibFilter>('all');
+  const filteredLib = LIBRARY_ITEMS
+    .filter(i => libFilter === 'all' || i.type === libFilter)
+    .filter(i => !libSearch || [i.title, i.author, ...i.tags].some(s => s.toLowerCase().includes(libSearch.toLowerCase())));
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { copilotQuery, setCopilotQuery, activeMatchId, selectedPlayer } = useAppContext();
   const { matchMeta, events } = useContext(DataContext);
@@ -317,7 +343,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-white/[0.02] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-green-500 flex items-center justify-center shadow-[0_0_20px_rgba(74,222,128,0.3)]">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -328,50 +354,147 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
               </div>
             </div>
           </div>
+          {/* Ask / Library tabs */}
+          <div className="flex bg-white/5 border border-white/8 rounded-xl p-1 gap-1">
+            {(['chat', 'library'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setCopilotTab(t)}
+                className={`px-5 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
+                  copilotTab === t ? 'bg-white/15 text-white' : 'text-zinc-500 hover:text-white'
+                }`}
+              >
+                {t === 'chat' ? 'Ask' : 'Library'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {messages.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="p-6 space-y-6">
-              {messages.map(renderMessage)}
-              {isTyping && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto">
-                  <TypingDots />
-                </motion.div>
+        {copilotTab === 'chat' ? (
+          <>
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {messages.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <div className="p-6 space-y-6">
+                  {messages.map(renderMessage)}
+                  {isTyping && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto">
+                      <TypingDots />
+                    </motion.div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
-          )}
-        </div>
-
-        {/* Input */}
-        <div className="px-8 pb-8 pt-4 border-t border-white/5 bg-black/20 shrink-0">
-          <div className="max-w-3xl mx-auto space-y-3">
-            <ChatInput
-              value={inputValue}
-              onChange={setInputValue}
-              onSend={handleSend}
-              placeholder="Ask about pass maps, tactics, formations, or navigate the platform..."
-              autoFocus
-            />
-            {messages.length === 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {QUICK_PROMPTS.map(q => (
+            <div className="px-8 pb-8 pt-4 border-t border-white/5 bg-black/20 shrink-0">
+              <div className="max-w-3xl mx-auto space-y-3">
+                <ChatInput
+                  value={inputValue}
+                  onChange={setInputValue}
+                  onSend={handleSend}
+                  placeholder="Ask about pass maps, tactics, formations, or navigate the platform..."
+                  autoFocus
+                />
+                {messages.length === 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {QUICK_PROMPTS.map(q => (
+                      <button
+                        key={q.prompt}
+                        onClick={() => sendMessage(q.prompt)}
+                        className="px-3 py-1.5 bg-white/5 hover:bg-white/8 border border-white/8 hover:border-sky-500/40 rounded-lg text-[11px] text-zinc-400 hover:text-zinc-200 transition-all"
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* ── Library tab ── */
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Search + filters */}
+            <div className="px-8 py-5 border-b border-white/5 space-y-3 shrink-0">
+              <div className="max-w-3xl mx-auto relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                <input
+                  value={libSearch}
+                  onChange={e => setLibSearch(e.target.value)}
+                  placeholder="Search tactics, models, widgets, formations..."
+                  autoFocus
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-sky-500/40 transition-colors"
+                />
+              </div>
+              <div className="max-w-3xl mx-auto flex gap-2">
+                {(['all', 'widget', 'model', 'tactics', 'formation'] as const).map(f => (
                   <button
-                    key={q.prompt}
-                    onClick={() => sendMessage(q.prompt)}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/8 border border-white/8 hover:border-purple-500/40 rounded-lg text-[11px] text-zinc-400 hover:text-zinc-200 transition-all"
+                    key={f}
+                    onClick={() => setLibFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                      libFilter === f
+                        ? 'bg-white text-black'
+                        : 'bg-white/5 border border-white/8 text-zinc-500 hover:text-white'
+                    }`}
                   >
-                    {q.label}
+                    {f === 'all' ? 'All' : f === 'widget' ? 'Widgets' : f === 'model' ? 'Models' : f === 'tactics' ? 'Tactics' : 'Formations'}
                   </button>
                 ))}
               </div>
-            )}
+            </div>
+
+            {/* Scrollable grid */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+              <div className="max-w-3xl mx-auto">
+                {filteredLib.length === 0 ? (
+                  <div className="text-center py-16 text-zinc-600 text-sm">No results for "{libSearch}"</div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {filteredLib.map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => onNavigate(item.nav as ViewType)}
+                        className="group bg-[#09090b] border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                      >
+                        {/* Coloured header with chevron pattern */}
+                        <div className="h-24 relative overflow-hidden">
+                          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${item.dark} 0%, ${item.color} 100%)` }} />
+                          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.12 }} aria-hidden>
+                            <defs>
+                              <pattern id={`lc-${item.id}`} x="0" y="0" width="40" height="28" patternUnits="userSpaceOnUse">
+                                <polyline points="0,0 20,14 40,0"   stroke="white" strokeWidth="3" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                                <polyline points="0,14 20,28 40,14" stroke="white" strokeWidth="3" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                              </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill={`url(#lc-${item.id})`} />
+                          </svg>
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/70 to-transparent" />
+                          <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/50 backdrop-blur-sm rounded text-[9px] font-bold text-white/60 uppercase tracking-wider">
+                            {item.type}
+                          </span>
+                        </div>
+                        {/* Meta */}
+                        <div className="p-3">
+                          <div className="text-xs font-bold text-white truncate group-hover:text-sky-400 transition-colors">{item.title}</div>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className="text-[10px] text-zinc-600 truncate">@{item.author}</span>
+                            <span className="text-[10px] text-yellow-500 font-bold ml-1 shrink-0">★ {item.rating}</span>
+                          </div>
+                          <div className="flex gap-1 mt-1.5 flex-wrap">
+                            {item.tags.slice(0, 2).map(t => (
+                              <span key={t} className="text-[9px] px-1.5 py-0.5 bg-white/5 text-zinc-600 rounded">{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
