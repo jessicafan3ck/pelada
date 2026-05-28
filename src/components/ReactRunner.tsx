@@ -53,7 +53,7 @@ export function buildWidgetSrcdoc(rawCode: string): string {
 var c=${safe};
 var R=window.Recharts||{};
 try{
-var t=Babel.transform(c,{presets:["react","typescript"],sourceType:"module"}).code;
+var t=Babel.transform(c,{presets:["react","typescript"],sourceType:"module",filename:"widget.tsx"}).code;
 var fn=new Function(${allParams},t+"\\nreturn typeof Widget!='undefined'?Widget:null;");
 var W=fn(${allArgs});
 if(!W)throw new Error("No Widget() function defined.");
@@ -101,7 +101,7 @@ function render(raw) {
       .replace(/\bexport\s+default\s+/g, '')
       .replace(/\bexport\s+\{[^}]*\};?/g, '')
       .trim();
-    var t = Babel.transform(code, { presets: ['react', 'typescript'], sourceType: 'module' }).code;
+    var t = Babel.transform(code, { presets: ['react', 'typescript'], sourceType: 'module', filename: 'widget.tsx' }).code;
     var fn = new Function(...PARAMS, t + '\nreturn typeof Widget !== "undefined" ? Widget : null;');
     var W  = fn(...ARGS);
     if (!W) throw new Error('Widget() not defined. Code must define: function Widget() { ... }');

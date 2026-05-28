@@ -62,6 +62,7 @@ export default function EmbedPlayer() {
       const { code: transformed } = Babel.transform(code, {
         presets: ['react', 'typescript'],
         sourceType: 'module',
+        filename: 'widget.tsx',
       });
 
       const rechartsVals = RECHARTS_KEYS.map(k => (Recharts as Record<string, unknown>)[k]);
