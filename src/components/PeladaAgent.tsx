@@ -105,7 +105,7 @@ function ChatInput({ value, onChange, onSend, placeholder = 'Ask anything...', a
           onChange={e => onChange(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && onSend()}
           placeholder={placeholder}
-          className="w-full bg-white/5 rounded-2xl pl-5 pr-14 py-4 text-sm text-white focus:outline-none transition-all placeholder:text-zinc-500"
+          className="w-full bg-white/5 rounded-2xl pl-8 pr-14 py-4 text-sm text-white focus:outline-none transition-all placeholder:text-zinc-500"
           style={{ border: '1.5px solid rgba(251,191,36,0.6)', boxShadow: '0 0 0 3px rgba(251,191,36,0.08)' }}
         />
         <button
@@ -382,7 +382,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
         {copilotTab === 'chat' ? (
           messages.length === 0 ? (
             /* ── Empty state: all 3 sections in one justify-evenly container ── */
-            <div className="flex-1 flex flex-col items-center justify-evenly px-8 py-8 text-center">
+            <div className="flex-1 flex flex-col items-center justify-evenly px-8 text-center">
               <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
                 Ask me to visualize data, navigate to a section,<br />or analyze a tactical idea.
               </p>
