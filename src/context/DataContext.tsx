@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getWWCMatches, getWWCLineup, getWWCTournamentPlayerStats, getWWCEventsForMatch } from '../services/wwcData';
+import { getWWCMatches, getWWCLineup, getWWCTournamentPlayerStats, getWWCEventsForMatch, getAllWWCEvents } from '../services/wwcData';
 import type { WWCMatch, TournamentPlayerStat, WWCEvent } from '../services/wwcData';
 
 // Legacy shape for LineupView/ContextPanel (already in use across the codebase)
@@ -189,17 +189,14 @@ export const DataContextProvider = ({ children }: { children: React.ReactNode })
   const [isLoading, setIsLoading]     = useState(false);
   const [sessionId]                   = useState('session_' + Math.random().toString(36).slice(2, 9));
 
-  // Startup: load all matches + tournament player stats
+  // Startup: load all matches, all tournament events, and player stats
   useEffect(() => {
     getWWCMatches().then(matches => {
       setWwcMatches(matches);
       setMatchMeta(matches.map(wwcMatchToMeta));
-      if (matches.length > 0) {
-        const firstId = matches[0].match_id;
-        _setSelected(firstId);
-        getWWCEventsForMatch(firstId).then(evs => setEvents(evs.map(wwcEventToLegacy)));
-      }
+      if (matches.length > 0) _setSelected(matches[0].match_id);
     });
+    getAllWWCEvents().then(evs => setEvents(evs.map(wwcEventToLegacy)));
     getWWCTournamentPlayerStats().then(setTournamentStats);
   }, []);
 

@@ -2,21 +2,29 @@ import { useState, useContext, useMemo } from 'react';
 import { DataContext } from '../../context/DataContext';
 import { useAppContext } from '../../context/AppContext';
 
+// StatsBomb pitch: 120 × 80 yards.  Our events are normalised to 0-1,
+// so multiply by 120/80 to get back into viewBox coords.
+const SB_X = 120;
+const SB_Y = 80;
+
 const PassMap = () => {
-  const { events } = useContext(DataContext);
+  const { events, matchMeta } = useContext(DataContext);
   const { setCopilotQuery } = useAppContext();
-  const [filterOutcome, setFilterOutcome] = useState('all');
-  const [selectedTeam, setSelectedTeam] = useState('all');
+  const [filterOutcome,   setFilterOutcome]   = useState('all');
+  const [selectedTeam,    setSelectedTeam]    = useState('all');
+  const [selectedMatchId, setSelectedMatchId] = useState<'all' | number>('all');
+
+  const matchEvents = useMemo(() => {
+    if (selectedMatchId === 'all') return events;
+    return events.filter(e => e.match_id === selectedMatchId);
+  }, [events, selectedMatchId]);
 
   const hasValidCoords = (e: any) =>
-    (e.x_location_start != null && e.y_location_start != null) ||
-    (e.x_location_end   != null && e.y_location_end   != null);
-
-  const matchEvents = events;
+    e.x_location_start != null && e.y_location_start != null;
 
   const teams = useMemo(() => {
-    const teamNames = [...new Set(matchEvents.map((e: any) => e.team_name).filter(Boolean))] as string[];
-    return teamNames.sort();
+    const names = [...new Set(matchEvents.map((e: any) => e.team_name).filter(Boolean))] as string[];
+    return names.sort();
   }, [matchEvents]);
 
   const filteredEvents = useMemo(() => {
@@ -26,56 +34,53 @@ const PassMap = () => {
   }, [matchEvents, selectedTeam]);
 
   const filteredPasses = useMemo(() => {
-    const passes = filteredEvents.filter(e =>
-      e.event === 'pass' && hasValidCoords(e)
-    );
+    const passes = filteredEvents.filter(e => e.event === 'pass' && hasValidCoords(e));
     if (filterOutcome === 'all') return passes;
-    return passes.filter(pass => {
-      if (filterOutcome === 'complete')   return pass.outcome?.includes('complete');
-      if (filterOutcome === 'incomplete') return pass.outcome?.includes('incomplete');
-      if (filterOutcome === 'assist')     return pass.outcome === 'assist';
-      return pass.outcome === filterOutcome;
+    return passes.filter(p => {
+      if (filterOutcome === 'complete')   return p.outcome?.includes('complete');
+      if (filterOutcome === 'incomplete') return p.outcome?.includes('incomplete');
+      if (filterOutcome === 'assist')     return p.outcome === 'assist';
+      return p.outcome === filterOutcome;
     });
   }, [filteredEvents, filterOutcome]);
 
-  const getPassColor = (outcome: string | undefined) => {
-    if (!outcome)                          return '#6B7280';
-    if (outcome.includes('complete'))      return '#00D9FF';
-    if (outcome.includes('incomplete'))    return '#F87171';
-    if (outcome === 'assist')              return '#FBB040';
+  const getColor = (outcome: string | undefined) => {
+    if (!outcome)                         return '#6B7280';
+    if (outcome.includes('complete'))     return '#00D9FF';
+    if (outcome.includes('incomplete'))   return '#F87171';
+    if (outcome === 'assist')             return '#FBB040';
     return '#6B7280';
   };
 
-  const getEventCoords = (event: any) => ({
-    startX: event.x_location_start ?? 0,
-    startY: event.y_location_start ?? 0,
-    endX:   event.x_location_end   ?? event.x_location_start ?? 0,
-    endY:   event.y_location_end   ?? event.y_location_start ?? 0,
-  });
-
   const stats = useMemo(() => {
-    const allPasses = filteredEvents.filter(e => e.event === 'pass');
-    const complete   = allPasses.filter(p => p.outcome?.includes('complete')).length;
-    const incomplete = allPasses.filter(p => p.outcome?.includes('incomplete')).length;
-    const assists    = allPasses.filter(p => p.outcome === 'assist').length;
+    const all      = filteredEvents.filter(e => e.event === 'pass');
+    const complete   = all.filter(p => p.outcome?.includes('complete')).length;
+    const incomplete = all.filter(p => p.outcome?.includes('incomplete')).length;
+    const assists    = all.filter(p => p.outcome === 'assist').length;
     const total      = complete + incomplete + assists;
-    const accuracy   = total > 0 ? ((complete / total) * 100).toFixed(1) : '0.0';
-    return { complete, incomplete, assists, accuracy };
+    return { complete, incomplete, assists, accuracy: total > 0 ? ((complete / total) * 100).toFixed(1) : '0.0' };
   }, [filteredEvents]);
 
-  const displayPasses = filteredPasses.slice(0, 200);
+  // Cap displayed passes for performance — still use all for stats
+  const displayPasses = filteredPasses.slice(0, 500);
 
   const handleInterpret = () => {
-    const total    = filteredPasses.length;
-    const compPct  = total > 0 ? Math.round((stats.complete / total) * 100) : 0;
-    const teamLabel = selectedTeam === 'all' ? 'both teams combined' : selectedTeam;
+    const total     = filteredPasses.length;
+    const compPct   = total > 0 ? Math.round((stats.complete / total) * 100) : 0;
+    const teamLabel = selectedTeam === 'all' ? 'all teams' : selectedTeam;
+    const matchObj  = matchMeta.find(m => m.match_id === selectedMatchId);
+    const matchLabel = selectedMatchId === 'all'
+      ? 'the full WWC 2023 tournament'
+      : `${matchObj?.home_team} vs ${matchObj?.away_team}`;
     setCopilotQuery(
-      `Interpret this pass map for ${teamLabel} in this WWC 2023 match. ` +
+      `Interpret this pass map for ${teamLabel} in ${matchLabel}. ` +
       `Total passes: ${total}. Complete: ${stats.complete} (${compPct}%). ` +
       `Incomplete: ${stats.incomplete}. Assists: ${stats.assists}. ` +
       `What does this passing pattern reveal about their tactical approach?`
     );
   };
+
+  const selectCls = "bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50";
 
   return (
     <div className="bg-black/40 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
@@ -91,20 +96,22 @@ const PassMap = () => {
               ✦ Interpret
             </button>
             <select
-              value={selectedTeam}
-              onChange={(e) => setSelectedTeam(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              value={selectedMatchId}
+              onChange={e => setSelectedMatchId(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+              className={selectCls}
             >
-              <option value="all">All Teams</option>
-              {teams.map((team: string) => (
-                <option key={team} value={team}>{team}</option>
+              <option value="all">All Matches</option>
+              {matchMeta.map(m => (
+                <option key={m.match_id} value={m.match_id}>
+                  {m.home_team} vs {m.away_team}
+                </option>
               ))}
             </select>
-            <select
-              value={filterOutcome}
-              onChange={(e) => setFilterOutcome(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            >
+            <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectCls}>
+              <option value="all">All Teams</option>
+              {teams.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)} className={selectCls}>
               <option value="all">All Passes</option>
               <option value="complete">Complete</option>
               <option value="incomplete">Incomplete</option>
@@ -114,112 +121,127 @@ const PassMap = () => {
         </div>
       </div>
 
-      <div className="p-6 space-y-5">
-        {/* Pitch */}
-        <div
-          className="relative w-full bg-green-900/20 border border-green-500/20 rounded-xl overflow-hidden"
-          style={{ aspectRatio: '16/9' }}
-        >
-          {/* Pitch markings */}
-          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+      <div className="p-6 space-y-4">
+        {/* ── Pitch (viewBox matches StatsBomb 120 × 80) ── */}
+        <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: '3/2' }}>
+          <svg
+            viewBox="-3 -2 126 84"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full"
+          >
+            {/* Grass */}
+            <rect x="-3" y="-2" width="126" height="84" fill="#1a3a20" />
+            {/* Pitch stripes */}
+            {[0,1,2,3,4,5,6,7,8,9].map(i => (
+              <rect key={i} x={i * 12} y="0" width="12" height="80"
+                fill={i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent'} />
+            ))}
+
+            {/* ── Pitch markings ── */}
             {/* Outer boundary */}
-            <rect x="3%" y="4%" width="94%" height="92%" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" rx="2" />
+            <rect x="0" y="0" width="120" height="80" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.6" />
             {/* Centre line */}
-            <line x1="50%" y1="4%" x2="50%" y2="96%" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            {/* Centre circle */}
-            <ellipse cx="50%" cy="50%" rx="8%" ry="12%" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-            {/* Left penalty area */}
-            <rect x="3%" y="25%" width="13%" height="50%" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+            <line x1="60" y1="0" x2="60" y2="80" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5" />
+            {/* Centre circle (r=10 yds) */}
+            <circle cx="60" cy="40" r="10" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="0.5" />
+            {/* Centre spot */}
+            <circle cx="60" cy="40" r="0.7" fill="rgba(255,255,255,0.5)" />
+
+            {/* Left penalty area: 18 yds deep, 40 yds wide (y 18→62) */}
+            <rect x="0" y="18" width="18" height="44" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5" />
             {/* Right penalty area */}
-            <rect x="84%" y="25%" width="13%" height="50%" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-            {/* Left 6-yard box */}
-            <rect x="3%" y="38%" width="5%" height="24%" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+            <rect x="102" y="18" width="18" height="44" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5" />
+
+            {/* Left 6-yard box: 6 yds deep, 20 yds wide (y 30→50) */}
+            <rect x="0" y="30" width="6" height="20" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
             {/* Right 6-yard box */}
-            <rect x="92%" y="38%" width="5%" height="24%" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
-          </svg>
+            <rect x="114" y="30" width="6" height="20" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
 
-          {/* Pass lines */}
-          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+            {/* Penalty spots */}
+            <circle cx="12"  cy="40" r="0.7" fill="rgba(255,255,255,0.5)" />
+            <circle cx="108" cy="40" r="0.7" fill="rgba(255,255,255,0.5)" />
+
+            {/* Left penalty D — arc outside penalty area */}
+            <path d="M 18,32 A 10,10 0 0,0 18,48" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
+            {/* Right penalty D */}
+            <path d="M 102,32 A 10,10 0 0,1 102,48" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
+
+            {/* Goals (extending outside boundary) */}
+            <rect x="-2.44" y="34.16" width="2.44" height="11.68" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.5" />
+            <rect x="120"   y="34.16" width="2.44" height="11.68" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.5" />
+
+            {/* Corner arcs (r=1 yd) */}
+            <path d="M 0,1 A 1,1 0 0,0 1,0"     fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
+            <path d="M 119,0 A 1,1 0 0,0 120,1"  fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
+            <path d="M 120,79 A 1,1 0 0,0 119,80" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
+            <path d="M 1,80 A 1,1 0 0,0 0,79"    fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.4" />
+
+            {/* ── Pass lines ── */}
             {displayPasses.map((pass, i) => {
-              const c = getEventCoords(pass);
+              const x1 = (pass.x_location_start ?? 0) * SB_X;
+              const y1 = (pass.y_location_start ?? 0) * SB_Y;
+              const x2 = (pass.x_location_end   ?? pass.x_location_start ?? 0) * SB_X;
+              const y2 = (pass.y_location_end   ?? pass.y_location_start ?? 0) * SB_Y;
               return (
-                <line
-                  key={i}
-                  x1={`${c.startX * 100}%`}
-                  y1={`${c.startY * 100}%`}
-                  x2={`${c.endX * 100}%`}
-                  y2={`${c.endY * 100}%`}
-                  stroke={getPassColor(pass.outcome)}
-                  strokeWidth="1.5"
-                  opacity="0.55"
-                />
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                  stroke={getColor(pass.outcome)} strokeWidth="0.5" opacity="0.45" />
               );
             })}
+
+            {/* ── Start dots ── */}
+            {displayPasses.map((pass, i) => (
+              <circle
+                key={i}
+                cx={(pass.x_location_start ?? 0) * SB_X}
+                cy={(pass.y_location_start ?? 0) * SB_Y}
+                r="0.8"
+                fill={getColor(pass.outcome)}
+                opacity="0.75"
+              />
+            ))}
           </svg>
 
-          {/* Pass start/end dots */}
-          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
-            {displayPasses.map((pass, i) => {
-              const c     = getEventCoords(pass);
-              const color = getPassColor(pass.outcome);
-              return (
-                <g key={i}>
-                  <circle cx={`${c.startX * 100}%`} cy={`${c.startY * 100}%`} r="2.5" fill={color} opacity="0.8" />
-                  <circle cx={`${c.endX * 100}%`}   cy={`${c.endY * 100}%`}   r="2"   fill={color} opacity="0.6" />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Pass count badge */}
-          {filteredPasses.length > 200 && (
-            <div className="absolute bottom-3 left-3 text-[10px] text-gray-400 bg-black/60 px-2 py-1 rounded-lg backdrop-blur-sm">
-              Showing 200 of {filteredPasses.length} passes
+          {/* Overlays */}
+          {filteredPasses.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-gray-400 text-sm bg-black/60 px-4 py-2 rounded-lg">
+                No pass data for this selection
+              </span>
             </div>
           )}
-          {filteredPasses.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-              No pass data for this selection
+          {filteredPasses.length > 500 && (
+            <div className="absolute bottom-2 left-3 text-[10px] text-gray-400 bg-black/60 px-2 py-1 rounded-lg">
+              Showing 500 of {filteredPasses.length} passes
             </div>
           )}
         </div>
 
-        {/* Legend + Stats row */}
+        {/* ── Legend + compact stats ── */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          {/* Legend */}
           <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-1 rounded" style={{ backgroundColor: '#00D9FF' }} />
-              <span className="text-gray-400 text-xs">Complete</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-1 rounded" style={{ backgroundColor: '#F87171' }} />
-              <span className="text-gray-400 text-xs">Incomplete</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-1 rounded" style={{ backgroundColor: '#FBB040' }} />
-              <span className="text-gray-400 text-xs">Assist</span>
-            </div>
+            {[
+              { color: '#00D9FF', label: 'Complete' },
+              { color: '#F87171', label: 'Incomplete' },
+              { color: '#FBB040', label: 'Assist' },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-2">
+                <div className="w-5 h-px rounded" style={{ backgroundColor: color, borderTop: `2px solid ${color}` }} />
+                <span className="text-gray-400 text-xs">{label}</span>
+              </div>
+            ))}
           </div>
-
-          {/* Compact stats */}
-          <div className="flex gap-3">
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center">
-              <div className="text-lg font-bold text-blue-400">{stats.complete}</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Complete</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center">
-              <div className="text-lg font-bold text-red-400">{stats.incomplete}</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Incomplete</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center">
-              <div className="text-lg font-bold text-yellow-400">{stats.assists}</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Assists</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center">
-              <div className="text-lg font-bold text-green-400">{stats.accuracy}%</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-wide">Accuracy</div>
-            </div>
+          <div className="flex gap-2">
+            {[
+              { val: stats.complete,        label: 'Complete',   color: 'text-blue-400'   },
+              { val: stats.incomplete,      label: 'Incomplete', color: 'text-red-400'    },
+              { val: stats.assists,         label: 'Assists',    color: 'text-yellow-400' },
+              { val: `${stats.accuracy}%`,  label: 'Accuracy',   color: 'text-green-400'  },
+            ].map(s => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center min-w-[64px]">
+                <div className={`text-lg font-bold ${s.color}`}>{s.val}</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide">{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

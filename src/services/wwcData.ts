@@ -242,6 +242,18 @@ export async function getWWCShotEvents(matchId: number): Promise<WWCEvent[]> {
   return (data ?? []) as WWCEvent[];
 }
 
+/** Load every event in the WWC 2023 dataset (all matches). */
+export async function getAllWWCEvents(): Promise<WWCEvent[]> {
+  const { data, error } = await supabase
+    .from('wwc2023_events')
+    .select('*')
+    .order('match_id', { ascending: true })
+    .order('idx',      { ascending: true })
+    .limit(200000);
+  if (error) console.error('getAllWWCEvents:', error.message);
+  return (data ?? []) as WWCEvent[];
+}
+
 export async function getWWCEventsForMatch(
   matchId: number,
   types?: string[],
