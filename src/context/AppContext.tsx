@@ -53,7 +53,7 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   const [userMode, setUserMode] = useState<UserMode>('fan');
   const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer | null>(null);
   const [contextPanelOpen, setContextPanelOpen] = useState(false);
-  const [activeMatchId, setActiveMatchId] = useState<number | null>(3869685);
+  const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
   const [copilotQuery, setCopilotQuery] = useState<string | null>(null);
 

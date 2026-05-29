@@ -9,7 +9,7 @@ const STAGE_ORDER = ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place 
 const DROPDOWN_BG = '#0d0d14';
 
 export default function MatchContextBar() {
-  const { matchMeta } = useContext(DataContext);
+  const { matchMeta, setSelectedMatch } = useContext(DataContext);
   const { activeMatchId, setActiveMatchId, activeTeam, setActiveTeam } = useAppContext();
   const [open, setOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -109,7 +109,7 @@ export default function MatchContextBar() {
           {grouped[stage].map(m => (
             <button
               key={m.match_id}
-              onClick={() => { setActiveMatchId(m.match_id); setActiveTeam(null); setOpen(false); }}
+              onClick={() => { setActiveMatchId(m.match_id); setSelectedMatch(m.match_id); setActiveTeam(null); setOpen(false); }}
               style={{
                 width: '100%',
                 display: 'flex',
