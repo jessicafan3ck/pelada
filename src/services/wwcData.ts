@@ -242,16 +242,27 @@ export async function getWWCShotEvents(matchId: number): Promise<WWCEvent[]> {
   return (data ?? []) as WWCEvent[];
 }
 
-/** Load every event in the WWC 2023 dataset (all matches). */
+/** Load every event in the WWC 2023 dataset (all matches) via paginated range queries. */
 export async function getAllWWCEvents(): Promise<WWCEvent[]> {
-  const { data, error } = await supabase
-    .from('wwc2023_events')
-    .select('*')
-    .order('match_id', { ascending: true })
-    .order('idx',      { ascending: true })
-    .limit(200000);
-  if (error) console.error('getAllWWCEvents:', error.message);
-  return (data ?? []) as WWCEvent[];
+  const PAGE = 5000;
+  const cols = 'event_id,match_id,idx,minute,second,period,type,team,player,player_id,position,x,y,under_pressure,possession_team,shot_xg,shot_outcome,shot_end_x,shot_end_y,pass_outcome,pass_recipient,pass_end_x,pass_end_y,pass_length,carry_end_x,carry_end_y,dribble_outcome,counterpress';
+  const all: WWCEvent[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('wwc2023_events')
+      .select(cols)
+      .in('type', ['Pass', 'Shot', 'Pressure', 'Carry', 'Dribble'])
+      .order('match_id', { ascending: true })
+      .order('idx',      { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) { console.error('getAllWWCEvents page error:', error.message); break; }
+    if (!data?.length) break;
+    all.push(...(data as WWCEvent[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
 }
 
 export async function getWWCEventsForMatch(

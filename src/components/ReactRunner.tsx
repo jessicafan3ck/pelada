@@ -40,28 +40,35 @@ export function buildWidgetSrcdoc(rawCode: string): string {
 
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>
-<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
-<script src="https://unpkg.com/@babel/standalone@7.23.9/babel.min.js"></script>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" onerror="window.__loadErr='React failed to load from CDN'"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" onerror="window.__loadErr='ReactDOM failed to load from CDN'"></script>
+<script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js" onerror="window.__loadErr='Recharts failed to load from CDN'"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.9/babel.min.js" onerror="window.__loadErr='Babel failed to load from CDN'"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0a0a;color:#e4e4e7;font-family:system-ui,sans-serif}
-#root{padding:16px}
+#root{padding:16px;min-height:200px}
 .err{color:#f87171;padding:16px;font-size:12px;font-family:monospace;white-space:pre-wrap;background:#1a0000;border-radius:8px;margin:8px}
 </style>
 </head><body>
 <div id="root"></div>
 <script>(function(){
+var rootEl=document.getElementById("root");
+function showErr(msg){rootEl.innerHTML="<div class='err'>"+String(msg)+"</div>";}
+if(window.__loadErr){showErr(window.__loadErr);return;}
 var c=${safe};
 var R=window.Recharts||{};
 try{
+if(typeof Babel==='undefined')throw new Error("Babel not loaded — check network/CDN");
+if(typeof React==='undefined')throw new Error("React not loaded — check network/CDN");
+if(typeof ReactDOM==='undefined')throw new Error("ReactDOM not loaded — check network/CDN");
 var t=Babel.transform(c,{presets:["react","typescript"],sourceType:"module",filename:"widget.tsx"}).code;
 var fn=new Function(${allParams},t+"\\nreturn typeof Widget!='undefined'?Widget:null;");
 var W=fn(${allArgs});
 if(!W)throw new Error("No Widget() function found. Make sure your code defines: function Widget() { return <div>...</div>; }");
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(W));
-}catch(err){document.getElementById("root").innerHTML="<div class='err'>"+err.message+"</div>";}
+var ErrBoundary=class extends React.Component{constructor(p){super(p);this.state={err:null};}static getDerivedStateFromError(e){return{err:e};}render(){if(this.state.err)return React.createElement('div',{className:'err'},this.state.err.message);return this.props.children;}};
+ReactDOM.createRoot(rootEl).render(React.createElement(ErrBoundary,null,React.createElement(W)));
+}catch(err){showErr(err.message||String(err));}
 })();</script>
 </body></html>`;
 }
