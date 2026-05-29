@@ -330,52 +330,129 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
 
   // ── full-page layout ─────────────────────────────────────────────────────
 
+  // header style preview — pick A/B/C/D to find the right look
+  const [hStyle, setHStyle] = useState<'A'|'B'|'C'|'D'>('A');
+
+  const TabRow = ({ dark }: { dark?: boolean }) => (
+    <div className={`flex p-1 gap-1 rounded-xl ${dark ? 'bg-white/5 border border-white/8' : 'bg-black/15 border border-black/10'}`}>
+      {(['chat', 'library'] as const).map(t => (
+        <button key={t} onClick={() => setCopilotTab(t)}
+          className={`px-5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            dark
+              ? copilotTab === t ? 'bg-white/15 text-white' : 'text-zinc-500 hover:text-white'
+              : copilotTab === t ? 'bg-black/20 text-black' : 'text-black/45 hover:text-black'
+          }`}>
+          {t === 'chat' ? 'Ask' : 'Library'}
+        </button>
+      ))}
+    </div>
+  );
+
+  const OnlineDot = ({ dark }: { dark?: boolean }) => (
+    <div className="flex items-center gap-1.5">
+      <span className={`w-1.5 h-1.5 rounded-full ${dark ? 'bg-green-400 shadow-[0_0_6px_#4ade80]' : 'bg-black/40'}`} />
+      <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: dark ? '#4ade80' : 'rgba(0,0,0,0.45)' }}>Online</span>
+    </div>
+  );
+
+  const CpHeader = () => {
+    // A: Slim gradient-bar — dark header, 3px teal→pink bottom accent
+    if (hStyle === 'A') return (
+      <div className="shrink-0 relative flex items-center justify-between px-8 py-5 bg-white/[0.02] border-b border-white/5">
+        <div>
+          <div style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: '3px' }}>Pelada Analytics</div>
+          <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>Co-Pilot.</div>
+        </div>
+        <div className="flex items-center gap-4">
+          <OnlineDot dark />
+          <TabRow dark />
+        </div>
+        {/* bottom accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, #00C2A8, #E8197D)' }} />
+      </div>
+    );
+
+    // B: Left teal stripe — dark bg, bold teal left border, "CO-PILOT." in teal
+    if (hStyle === 'B') return (
+      <div className="shrink-0 relative flex items-center justify-between px-8 py-5 bg-white/[0.02] border-b border-white/5" style={{ borderLeft: '4px solid #00C2A8' }}>
+        <div>
+          <div style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: '3px' }}>Pelada Analytics</div>
+          <div style={{ fontSize: '22px', fontWeight: 900, color: '#00C2A8', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>Co-Pilot.</div>
+        </div>
+        <div className="flex items-center gap-4">
+          <OnlineDot dark />
+          <TabRow dark />
+        </div>
+      </div>
+    );
+
+    // C: Muted teal wash — barely-there teal tint, chevron ghost, clean
+    if (hStyle === 'C') return (
+      <div className="shrink-0 relative flex items-center justify-between px-8 py-5 border-b border-white/5 overflow-hidden">
+        <div className="absolute inset-0" style={{ background: 'rgba(0,194,168,0.07)' }} />
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.04 }} aria-hidden>
+          <defs>
+            <pattern id="cp-c-chev" x="0" y="0" width="70" height="49" patternUnits="userSpaceOnUse">
+              <polyline points="0,0 35,24.5 70,0"    stroke="white" strokeWidth="7" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              <polyline points="0,24.5 35,49 70,24.5" stroke="white" strokeWidth="7" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#cp-c-chev)" />
+        </svg>
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-2 h-8 rounded-full" style={{ background: '#00C2A8' }} />
+          <div>
+            <div style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '2px' }}>Pelada Analytics</div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>Co-Pilot.</div>
+          </div>
+        </div>
+        <div className="relative z-10 flex items-center gap-4">
+          <OnlineDot dark />
+          <TabRow dark />
+        </div>
+      </div>
+    );
+
+    // D: Compact two-tone — same brand colors, single-row, 60px
+    return (
+      <div className="shrink-0 relative overflow-hidden" style={{ height: '62px' }}>
+        <div className="absolute inset-0" style={{ background: '#00C2A8' }} />
+        <div className="absolute right-0 top-0 bottom-0" style={{ width: '50%', background: '#E8197D', clipPath: 'polygon(16% 0%, 100% 0%, 100% 100%, 0% 100%)' }} />
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.07 }} aria-hidden>
+          <defs>
+            <pattern id="cp-d-chev" x="0" y="0" width="60" height="42" patternUnits="userSpaceOnUse">
+              <polyline points="0,0 30,21 60,0"   stroke="black" strokeWidth="5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              <polyline points="0,21 30,42 60,21" stroke="black" strokeWidth="5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#cp-d-chev)" />
+        </svg>
+        <div className="relative z-10 flex items-center justify-between h-full px-8">
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>Co-Pilot.</div>
+          <div className="flex items-center gap-4">
+            <OnlineDot />
+            <TabRow />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (fullPage) {
     return (
-      <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/5 overflow-hidden">
-        {/* Header — branded banner */}
-        <div className="relative overflow-hidden shrink-0" style={{ minHeight: '108px' }}>
-          <div className="absolute inset-0" style={{ background: '#00C2A8' }} />
-          <div className="absolute right-0 top-0 bottom-0" style={{ width: '42%', background: '#E8197D', clipPath: 'polygon(24% 0%, 100% 0%, 100% 100%, 0% 100%)' }} />
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.07 }} aria-hidden>
-            <defs>
-              <pattern id="cp-chevrons" x="0" y="0" width="70" height="49" patternUnits="userSpaceOnUse">
-                <polyline points="0,0 35,24.5 70,0"   stroke="black" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                <polyline points="0,24.5 35,49 70,24.5" stroke="black" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#cp-chevrons)" />
-          </svg>
-          <div className="relative z-10 flex items-center justify-between px-8 h-full" style={{ minHeight: '108px' }}>
-            {/* Left wordmark */}
-            <div>
-              <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.28em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Pelada Analytics · Data Intelligence
-              </div>
-              <div style={{ fontSize: '44px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: '0.88' }}>
-                CO-PILOT.
-              </div>
-            </div>
-            {/* Right: online + tabs */}
-            <div className="flex flex-col items-end gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-black/40" />
-                <span style={{ fontSize: '9px', fontWeight: 800, color: 'rgba(0,0,0,0.45)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Online</span>
-              </div>
-              <div className="flex bg-black/15 border border-black/10 rounded-xl p-1 gap-1">
-                {(['chat', 'library'] as const).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setCopilotTab(t)}
-                    className={`px-5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      copilotTab === t ? 'bg-black/20 text-black' : 'text-black/45 hover:text-black'
-                    }`}
-                  >
-                    {t === 'chat' ? 'Ask' : 'Library'}
-                  </button>
-                ))}
-              </div>
-            </div>
+      <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/5 overflow-hidden relative">
+        <CpHeader />
+
+        {/* ── style picker overlay (preview tool) ── */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 z-50 mt-0" style={{ top: 'auto', bottom: '120px', left: 'auto', right: '24px', position: 'absolute' }}>
+          <div className="flex items-center gap-1 bg-zinc-900/90 backdrop-blur border border-white/10 rounded-xl px-2 py-1.5 shadow-xl">
+            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mr-1">Style</span>
+            {(['A','B','C','D'] as const).map(s => (
+              <button key={s} onClick={() => setHStyle(s)}
+                className={`w-6 h-6 rounded-lg text-[10px] font-black transition-all ${hStyle === s ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}>
+                {s}
+              </button>
+            ))}
           </div>
         </div>
 
