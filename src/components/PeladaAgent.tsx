@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useContext } from 'rea
 import { useAppContext } from '../context/AppContext';
 import { DataContext } from '../context/DataContext';
 import {
-  X, Send, Sparkles, Bot, ArrowRight, Maximize2, Minimize2, User, Zap, Search,
+  X, Send, ArrowRight, Maximize2, Minimize2, User, Zap, Search,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import PassMap from './visualizations/PassMap';
@@ -73,13 +73,11 @@ const VIZ_COMPONENTS: Record<string, React.ReactElement> = {
 function TypingDots() {
   return (
     <div className="flex items-center gap-3 px-1">
-      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/30 to-indigo-500/30 border border-white/10 flex items-center justify-center shrink-0">
-        <Bot className="w-4 h-4 text-purple-300" />
-      </div>
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500/30 to-sky-600/30 border border-sky-500/20 flex items-center justify-center shrink-0" />
       <div className="bg-white/5 border border-white/8 px-4 py-3 rounded-2xl rounded-bl-sm flex gap-1.5 items-center">
-        <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '120ms' }} />
-        <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '240ms' }} />
+        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce" style={{ animationDelay: '120ms' }} />
+        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce" style={{ animationDelay: '240ms' }} />
       </div>
     </div>
   );
@@ -106,12 +104,12 @@ function ChatInput({ value, onChange, onSend, placeholder = 'Ask anything...', a
         onChange={e => onChange(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && onSend()}
         placeholder={placeholder}
-        className="w-full bg-white/5 border border-white/10 rounded-2xl pl-5 pr-14 py-4 text-sm text-white focus:outline-none focus:border-purple-500/60 focus:bg-white/8 transition-all placeholder:text-zinc-500"
+        className="w-full bg-white/5 border border-white/10 rounded-2xl pl-5 pr-14 py-4 text-sm text-white focus:outline-none focus:border-sky-500/60 focus:bg-white/8 transition-all placeholder:text-zinc-500"
       />
       <button
         onClick={onSend}
         disabled={!value.trim()}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl text-white shadow-lg hover:shadow-purple-600/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl text-white shadow-lg hover:shadow-sky-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
       >
         <Send className="w-3.5 h-3.5" />
       </button>
@@ -266,19 +264,17 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
           {/* Avatar */}
           <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
             msg.type === 'user'
-              ? 'bg-gradient-to-br from-indigo-500 to-purple-600'
-              : 'bg-gradient-to-br from-purple-500/30 to-indigo-500/30 border border-white/10'
+              ? 'bg-gradient-to-br from-sky-500 to-sky-600'
+              : 'bg-gradient-to-br from-sky-500/20 to-sky-600/20 border border-sky-500/20'
           }`}>
-            {msg.type === 'user'
-              ? <User className="w-4 h-4 text-white" />
-              : <Bot className="w-4 h-4 text-purple-300" />}
+            {msg.type === 'user' && <User className="w-4 h-4 text-white" />}
           </div>
 
           <div className={`flex flex-col gap-2 ${msg.type === 'user' ? 'items-end max-w-[75%]' : 'items-start w-full'}`}>
             {msg.text && (
               <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                 msg.type === 'user'
-                  ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-tr-sm shadow-lg shadow-purple-900/30'
+                  ? 'bg-gradient-to-br from-sky-500 to-sky-600 text-white rounded-tr-sm shadow-lg shadow-sky-900/30'
                   : 'bg-white/6 border border-white/8 text-zinc-100 rounded-tl-sm'
               }`}>
                 {msg.type === 'agent' ? renderMarkdown(msg.text) : msg.text}
@@ -288,9 +284,9 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
             {msg.action && (
               <button
                 onClick={() => onNavigate(msg.action!.view as ViewType)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/40 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white transition-all group"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-sky-500/40 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white transition-all group"
               >
-                <Zap className="w-3.5 h-3.5 text-purple-400" />
+                <Zap className="w-3.5 h-3.5 text-sky-400" />
                 {msg.action.label}
                 <ArrowRight className="w-3.5 h-3.5 ml-auto group-hover:translate-x-0.5 transition-transform" />
               </button>
@@ -313,9 +309,6 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
   const EmptyState = () => (
     <div className="flex flex-col items-center justify-center h-full gap-8 text-center px-8">
       <div className="space-y-3">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border border-purple-500/20 flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(139,92,246,0.15)]">
-          <Sparkles className="w-7 h-7 text-purple-400" />
-        </div>
         <h2 className="text-lg font-bold text-white">Pelada Co-Pilot</h2>
         <p className="text-sm text-zinc-400 leading-relaxed max-w-xs">
           Ask me to visualize data, navigate to a section, or analyze a tactical idea.
@@ -326,7 +319,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
           <button
             key={q.prompt}
             onClick={() => sendMessage(q.prompt)}
-            className="px-3.5 py-2 bg-white/5 hover:bg-purple-500/15 border border-white/8 hover:border-purple-500/40 rounded-xl text-xs text-zinc-300 hover:text-white transition-all font-medium"
+            className="px-3.5 py-2 bg-white/5 hover:bg-sky-500/15 border border-white/8 hover:border-sky-500/40 rounded-xl text-xs text-zinc-300 hover:text-white transition-all font-medium"
           >
             {q.label}
           </button>
@@ -343,9 +336,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-white/[0.02] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-green-500 flex items-center justify-center shadow-[0_0_20px_rgba(74,222,128,0.3)]">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.35)]" />
             <div>
               <span className="text-base font-bold text-white">Co-Pilot</span>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -510,10 +501,9 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => onOpenChange(true)}
-            className="fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.5)] border border-white/20 z-50 hover:scale-110 transition-transform cursor-pointer"
+            className="fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-br from-sky-500 to-sky-600 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(14,165,233,0.5)] border border-white/20 z-50 hover:scale-110 transition-transform cursor-pointer"
           >
             <div className="absolute inset-0 rounded-full border border-white/30 animate-ping opacity-20" />
-            <Sparkles className="w-6 h-6 text-white" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -535,9 +525,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
               onClick={() => setIsMinimized(m => !m)}
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                  <Bot className="w-3.5 h-3.5 text-white" />
-                </div>
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600" />
                 <div>
                   <span className="text-sm font-bold text-white leading-none block">Co-Pilot</span>
                   <span className="text-[10px] text-green-400 font-medium">Online</span>
