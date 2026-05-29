@@ -97,26 +97,25 @@ function ChatInput({ value, onChange, onSend, placeholder = 'Ask anything...', a
 
   if (variant === 'amber') {
     return (
-      <div className="rounded-2xl p-[1.5px]" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #38BDF8 100%)' }}>
-        <div className="relative rounded-[14px] bg-[#0c0c12]">
-          <input
-            ref={ref}
-            type="text"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && onSend()}
-            placeholder={placeholder}
-            className="w-full bg-transparent rounded-[14px] pl-5 pr-14 py-4 text-sm text-white focus:outline-none transition-all placeholder:text-zinc-500"
-          />
-          <button
-            onClick={onSend}
-            disabled={!value.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-xl shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B)' }}
-          >
-            <Send className="w-3.5 h-3.5 text-black" />
-          </button>
-        </div>
+      <div className="relative">
+        <input
+          ref={ref}
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && onSend()}
+          placeholder={placeholder}
+          className="w-full bg-white/5 rounded-2xl pl-5 pr-14 py-4 text-sm text-white focus:outline-none transition-all placeholder:text-zinc-500"
+          style={{ border: '1.5px solid rgba(251,191,36,0.6)', boxShadow: '0 0 0 3px rgba(251,191,36,0.08)' }}
+        />
+        <button
+          onClick={onSend}
+          disabled={!value.trim()}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-xl shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B)' }}
+        >
+          <Send className="w-3.5 h-3.5 text-black" />
+        </button>
       </div>
     );
   }
@@ -381,40 +380,22 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
         </div>
 
         {copilotTab === 'chat' ? (
-          <>
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {messages.length === 0 ? (
-                /* ── Empty state — explicit spacing between each section ── */
-                <div className="flex flex-col items-center justify-center h-full text-center px-8">
-                  <p className="text-zinc-400 text-sm leading-relaxed max-w-sm" style={{ marginBottom: '52px' }}>
-                    Ask me to visualize data, navigate to a section,<br />or analyze a tactical idea.
-                  </p>
-                  <div className="flex flex-wrap gap-3 justify-center max-w-md">
-                    {QUICK_PROMPTS.map(q => (
-                      <button key={q.prompt} onClick={() => sendMessage(q.prompt)}
-                        className="px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all hover:scale-105"
-                        style={{ background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.28)', color: '#FBBF24' }}>
-                        {q.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-6 space-y-6">
-                  {messages.map(renderMessage)}
-                  {isTyping && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto">
-                      <TypingDots />
-                    </motion.div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-
-            {/* ── Input footer ── */}
-            <div className="px-8 pb-10 pt-8 bg-black/20 shrink-0">
-              <div className="max-w-3xl mx-auto">
+          messages.length === 0 ? (
+            /* ── Empty state: all 3 sections in one justify-evenly container ── */
+            <div className="flex-1 flex flex-col items-center justify-evenly px-8 py-8 text-center">
+              <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
+                Ask me to visualize data, navigate to a section,<br />or analyze a tactical idea.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center max-w-md">
+                {QUICK_PROMPTS.map(q => (
+                  <button key={q.prompt} onClick={() => sendMessage(q.prompt)}
+                    className="px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all hover:scale-105"
+                    style={{ background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.28)', color: '#FBBF24' }}>
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+              <div className="w-full max-w-3xl">
                 <ChatInput
                   value={inputValue}
                   onChange={setInputValue}
@@ -425,7 +406,32 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
                 />
               </div>
             </div>
-          </>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-6 space-y-6">
+                  {messages.map(renderMessage)}
+                  {isTyping && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto">
+                      <TypingDots />
+                    </motion.div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+              <div className="px-8 pb-8 pt-5 bg-black/20 shrink-0">
+                <div className="max-w-3xl mx-auto">
+                  <ChatInput
+                    value={inputValue}
+                    onChange={setInputValue}
+                    onSend={handleSend}
+                    placeholder="Ask about pass maps, tactics, formations, or navigate the platform..."
+                    variant="amber"
+                  />
+                </div>
+              </div>
+            </>
+          )
         ) : (
           /* ── Library tab ── */
           <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
