@@ -187,7 +187,7 @@ function PercentileBars({ player, peers }: { player: PlayerRow; peers: PlayerRow
           </div>
         );
       })}
-      <p className="text-[10px] text-zinc-300 pt-1">vs {peers.length} {peers[0]?.posGroup ?? ''}s in WC 2022</p>
+      <p className="text-[10px] text-zinc-300 pt-1">vs {peers.length} {peers[0]?.posGroup ?? ''}s in WWC 2023</p>
     </div>
   );
 }
@@ -479,7 +479,7 @@ export default function ScoutPage() {
     setInterpreting(true); setInterpretation('');
     const summary = centroids.map((c, i) => c ? `Group ${i + 1} (${c.n} players): pass% ${(c.comp * 100).toFixed(0)}%, xG/match ${c.xg.toFixed(2)}, press rate ${(c.press * 100).toFixed(0)}%` : null).filter(Boolean).join('\n');
     try {
-      const res = await fetch('/api/langgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `Analyze ${K} WC 2022 player clusters:\n${summary}\nFor each group: **Group N** + 3-5 word role label + one sharp tactical sentence.`, mode: 'agent', history: [] }) });
+      const res = await fetch('/api/langgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `Analyze ${K} WWC 2023 player clusters:\n${summary}\nFor each group: **Group N** + 3-5 word role label + one sharp tactical sentence.`, mode: 'agent', history: [] }) });
       setInterpretation((await res.json()).final_response || '');
     } catch { setInterpretation('Unavailable.'); }
     finally { setInterpreting(false); }
@@ -558,7 +558,7 @@ export default function ScoutPage() {
                   {p.jersey > 0 && <span className="text-[10px] text-zinc-300">#{p.jersey}</span>}
                 </div>
                 <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-1">{p.name}</h1>
-                <p className="text-sm text-zinc-300">{p.team} · WC 2022</p>
+                <p className="text-sm text-zinc-300">{p.team} · WWC 2023</p>
                 {wikiText && <p className="text-sm text-zinc-400 leading-relaxed mt-4 max-w-2xl">{wikiText}</p>}
               </div>
             </div>
@@ -635,7 +635,7 @@ export default function ScoutPage() {
 
             {/* Co-Pilot CTA */}
             <button
-              onClick={() => setCopilotQuery(`Analyze ${p.name}'s playing style and WC 2022 performance. They had ${fmt('xgPerMatch', p.xgPerMatch)} xG/match, ${fmt('passCompletion', p.passCompletion)} pass completion, and ${fmt('pressuresPerMatch', p.pressuresPerMatch)} pressures/match. Give a sharp tactical profile.`)}
+              onClick={() => setCopilotQuery(`Analyze ${p.name}'s playing style and WWC 2023 performance. They had ${fmt('xgPerMatch', p.xgPerMatch)} xG/match, ${fmt('passCompletion', p.passCompletion)} pass completion, and ${fmt('pressuresPerMatch', p.pressuresPerMatch)} pressures/match. Give a sharp tactical profile.`)}
               className="flex items-center gap-2 px-5 py-3 bg-green-600/20 hover:bg-green-600/30 border border-green-500/20 rounded-xl text-sm text-green-300 font-medium transition-all">
               <MessageSquare className="w-4 h-4" />
               Ask Co-Pilot about {p.name}
@@ -762,7 +762,7 @@ export default function ScoutPage() {
         </svg>
         <div className="relative z-10 h-full flex items-center justify-between px-6">
           <div>
-            <div style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '2px' }}>WC 2022 · {filtered.length} Players</div>
+            <div style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '2px' }}>WWC 2023 · {filtered.length} Players</div>
             <div style={{ fontSize: '26px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>Scout.</div>
           </div>
           <div className="flex p-1 gap-0.5 rounded-xl" style={{ background: 'rgba(0,0,0,0.10)', border: '1px solid rgba(0,0,0,0.08)' }}>

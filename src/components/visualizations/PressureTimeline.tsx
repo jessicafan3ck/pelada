@@ -71,7 +71,7 @@ const PressureTimeline = () => {
     const peak = pressureTimeline.reduce((a, b) => b.total > a.total ? b : a, { minute: '0', total: 0 });
     const teamLabel = selectedTeam === 'all' ? 'both teams' : selectedTeam;
     setCopilotQuery(
-      `Interpret this pressure timeline for ${teamLabel} in this WC 2022 match. ` +
+      `Interpret this pressure timeline for ${teamLabel} in this WWC 2023 match. ` +
       `Total defensive actions: ${total}. Peak pressing window: around minute ${peak.minute} (${peak.total} actions). ` +
       `What does this pressing pattern reveal about the team's defensive strategy and how it shifted through the match?`
     );

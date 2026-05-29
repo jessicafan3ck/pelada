@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Home, Target, Box, Settings, Bell, Menu,
-  Cpu, Globe, Database, Activity, Calendar, MessageSquare,
+  Cpu, Globe, Database, Activity, Calendar,
   Users2, FlaskConical, GitBranch,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
@@ -28,6 +28,15 @@ type ViewType =
   | 'lineup' | 'community' | 'similarity'
   | 'simulation';
 
+function PeladaIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden fill="none">
+      <polyline points="1,5 8,13 16,5 24,13 31,5"   stroke="#F59E0B" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points="1,27 8,19 16,27 24,19 31,27" stroke="#009C3B" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // Per-category accent colours — full static strings so Tailwind JIT includes them
 const CATEGORY_ACCENT = {
   General: { grad: 'from-sky-500/20 to-blue-700/5',     icon: 'text-sky-400',    dot: 'bg-sky-400',    dotGlow: 'shadow-[0_0_8px_rgba(56,189,248,0.8)]',    label: 'text-sky-600'    },
@@ -47,7 +56,7 @@ function AppShell() {
 
   const allNavItems = [
     { id: 'dashboard' as ViewType,  name: 'Hub',               icon: Home,        category: 'General',  analystOnly: false },
-    { id: 'copilot' as ViewType,    name: 'Co-Pilot',          icon: MessageSquare, category: 'General', analystOnly: false },
+    { id: 'copilot' as ViewType,    name: 'Co-Pilot',          icon: PeladaIcon,    category: 'General', analystOnly: false },
     { id: 'lineup' as ViewType,      name: 'Lineup',            icon: Users2,      category: 'Explore',  analystOnly: false },
     { id: 'similarity' as ViewType, name: 'Scout',             icon: GitBranch,   category: 'Explore',  analystOnly: false },
 

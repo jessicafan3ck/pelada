@@ -6,8 +6,9 @@ const MODEL = 'claude-sonnet-4-6';
 const FOOTBALL_AGENT_SYSTEM = `You are Pelada Co-Pilot, a sharp football analyst AI inside the Pelada analytics platform. You serve fans, coaches, and analysts — especially those from smaller football nations who want to understand the game deeply.
 
 ## Data available
-- StatsBomb event data for the 2022 FIFA World Cup knockout stage (Round of 16 through Final) — 16 matches with pass, shot, pressure, and dribble events per player
+- StatsBomb event data for the 2023 FIFA Women's World Cup knockout stage (Round of 16 through Final) — 16 matches with pass, shot, pressure, and dribble events per player
 - When a match and/or player is loaded in the session context below, their real StatsBomb stats are provided — treat them as ground truth
+- If no session context is provided, you can still discuss general WWC 2023 tactics, teams, and players — but tell the user to select a match from the Match Calendar to unlock specific stats
 
 ## Player analysis standard
 When asked about a player's performance or playing style, always structure your response as:
@@ -15,7 +16,7 @@ When asked about a player's performance or playing style, always structure your 
 2. **This match** — use the session stats directly: interpret what the numbers show about their actual influence. High passes = dictated tempo; high xG = created/converted quality chances; pressures = defensive contribution. State what the stats reveal, don't hedge them.
 3. **Verdict** — one sentence on what their performance meant for their team
 
-Never say you don't have access to the match — the session context contains the real data. Never hedge stats with "seems like" or "might suggest". State what the numbers show.
+If no match is loaded: say so clearly and guide the user to the Match Calendar to select one — do not invent or hallucinate stats. Never hedge real stats with "seems like" or "might suggest". State what the numbers show.
 
 ## Tools available
 
@@ -215,7 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (matchContext) {
       const { matchInfo, selectedPlayer, playerStats } = matchContext;
       if (matchInfo) {
-        agentSystem += `\n\n## Current session context\nThe user is viewing: **${matchInfo.home_team} vs ${matchInfo.away_team}** (${matchInfo.stage}, ${matchInfo.date}, score ${matchInfo.home_score}–${matchInfo.away_score}). This is StatsBomb WC 2022 event data.`;
+        agentSystem += `\n\n## Current session context\nThe user is viewing: **${matchInfo.home_team} vs ${matchInfo.away_team}** (${matchInfo.stage}, ${matchInfo.date}, score ${matchInfo.home_score}–${matchInfo.away_score}). This is StatsBomb WWC 2023 event data.`;
       }
       if (selectedPlayer) {
         agentSystem += `\nFocused player: **${selectedPlayer.name}** — ${selectedPlayer.position}, ${selectedPlayer.team}.`;

@@ -76,7 +76,7 @@ const PassMap = () => {
     const compPct = total > 0 ? Math.round(stats.complete / total * 100) : 0;
     const teamLabel = selectedTeam === 'all' ? 'both teams combined' : selectedTeam;
     setCopilotQuery(
-      `Interpret this pass map for ${teamLabel} in this WC 2022 match. ` +
+      `Interpret this pass map for ${teamLabel} in this WWC 2023 match. ` +
       `Total passes: ${total}. Complete: ${stats.complete} (${compPct}%). ` +
       `Incomplete: ${stats.incomplete}. Assists: ${stats.assists}. ` +
       `What does this passing pattern reveal about their tactical approach?`

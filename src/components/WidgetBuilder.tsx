@@ -174,7 +174,7 @@ const GEN_MESSAGES = [
   'Working out the details…',
   'Building chart structure…',
   'Calibrating axes…',
-  'Populating WC 2022 stats…',
+  'Populating WWC 2023 stats…',
   'Wiring up interactivity…',
 ];
 
@@ -254,10 +254,10 @@ function GeneratingPreview() {
   );
 }
 
-const WC2022_TEAMS = [
-  'Argentina','France','Brazil','England','Netherlands','Portugal',
-  'Morocco','Croatia','Spain','Japan','South Korea','USA',
-  'Senegal','Australia','Switzerland','Poland',
+const WWC2023_TEAMS = [
+  'Spain','England','Sweden','Australia','Japan','France',
+  'Netherlands','Colombia','Norway','Switzerland','Morocco','Nigeria',
+  'South Korea','Jamaica','Denmark','USA',
 ];
 
 function buildWidgetPrompt(userRequest: string): string {
@@ -273,9 +273,9 @@ STRICT CODE RULES:
 - Do NOT use TypeScript — no type annotations, no interfaces, no generics, plain JavaScript only
 
 DATA & INTERACTIVITY RULES:
-- If the widget involves comparing teams, include a <select> dropdown for EACH team slot so the user can swap teams — default to real WC 2022 teams: ${WC2022_TEAMS.join(', ')}
+- If the widget involves comparing teams, include a <select> dropdown for EACH team slot so the user can swap teams — default to real WWC 2023 teams: ${WWC2023_TEAMS.join(', ')}
 - If it involves players, include a player selector or at minimum show the top 5 by the relevant metric
-- All data must be hardcoded but realistic — use plausible WC 2022 stats (xG, shots, passes, possession %)
+- All data must be hardcoded but realistic — use plausible WWC 2023 stats (xG, shots, passes, possession %)
 - Pair every stat with a selector or label so the user knows which team/player it represents
 - Do NOT use emojis anywhere in the widget — no emoji in labels, tooltips, axis ticks, or text
 

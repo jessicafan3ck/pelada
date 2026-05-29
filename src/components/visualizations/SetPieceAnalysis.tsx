@@ -177,7 +177,7 @@ const SetPieceAnalysis = () => {
       `${o.origin}: ${o.total} situations, ${o.goals} goals (${o.conversionRate}% conversion)`
     ).join('; ');
     setCopilotQuery(
-      `Interpret this set piece analysis for ${teamLabel} in this WC 2022 match. ` +
+      `Interpret this set piece analysis for ${teamLabel} in this WWC 2023 match. ` +
       `${summary || 'No set piece data available'}. ` +
       `What does this tell us about how the team exploited or defended dead-ball situations?`
     );
