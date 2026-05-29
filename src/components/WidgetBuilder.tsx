@@ -603,7 +603,7 @@ Respond ONLY with valid JSON, no other text: {"name": "...", "description": "...
             {savedWidgets.map(w => {
               const Icon = typeIcon[w.type] ?? BarChart3;
               return (
-                <div key={w.id} className="group bg-[#09090b] border border-white/5 rounded-2xl overflow-hidden hover:border-yellow-500/30 transition-all hover:shadow-[0_0_30px_rgba(250,204,21,0.15)] hover:-translate-y-1 flex flex-col">
+                <div key={w.id} onClick={() => { if (w.code) { setGeneratedCode(w.code); setWidgetName(w.name); setWidgetDesc(w.description); setWidgetTags(w.tags); setNaturalLanguageInput(w.name); } setViewMode('builder'); }} className="group bg-[#09090b] border border-white/5 rounded-2xl overflow-hidden hover:border-yellow-500/30 transition-all hover:shadow-[0_0_30px_rgba(250,204,21,0.15)] hover:-translate-y-1 flex flex-col cursor-pointer">
                   <div className="h-40 bg-gradient-to-br from-[#111] to-[#1a1a1a] relative flex items-center justify-center p-8 group-hover:from-yellow-900/10 group-hover:to-yellow-900/10 transition-colors">
                     <div className="w-full h-full bg-white/5 rounded-xl border border-white/5 relative overflow-hidden shadow-inner flex items-center justify-center">
                       <Icon className="w-10 h-10 text-zinc-600 group-hover:text-yellow-400 transition-colors" />

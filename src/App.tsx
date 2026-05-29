@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Home, Target, Zap, Box, Settings, Bell, Menu,
+  Home, Target, Box, Settings, Bell, Menu,
   Cpu, Globe, Database, Activity, Calendar, MessageSquare,
   Users2, FlaskConical, GitBranch,
 } from 'lucide-react';
@@ -98,13 +98,14 @@ function AppShell() {
         <div className="h-20 flex items-center px-6 border-b border-white/5 relative overflow-hidden shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
           <div className="flex items-center gap-3 relative z-10">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-400 to-sky-500 flex items-center justify-center shadow-[0_0_16px_rgba(74,222,128,0.4)] shrink-0">
-              <Zap className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg shrink-0 overflow-hidden relative">
+              <div className="absolute inset-0" style={{ background: '#FBBF24' }} />
+              <div className="absolute inset-0" style={{ background: '#38BDF8', clipPath: 'polygon(52% 0%, 100% 0%, 100% 100%, 32% 100%)' }} />
             </div>
             {isSidebarOpen && (
               <div className="flex flex-col">
-                <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">Pelada</span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-lime-400 font-medium">Analytics OS</span>
+                <span style={{ fontWeight: 900, fontSize: '15px', textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>PELADA.</span>
+                <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>Analytics OS</span>
               </div>
             )}
           </div>

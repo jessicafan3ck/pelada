@@ -115,6 +115,7 @@ function render(raw) {
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'RENDER') render(e.data.code);
 });
+window.parent.postMessage({ type: 'SANDBOX_READY' }, '*');
 </script>
 </body></html>`;
 
@@ -124,7 +125,16 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
   const [ready, setReady] = useState(false);
   const cleanCode   = stripFences(code);
 
-  // When sandbox is ready (CDN scripts loaded) OR code changes, postMessage to render
+  // Listen for SANDBOX_READY from iframe (more reliable than onLoad for srcdoc)
+  useEffect(() => {
+    const handle = (e: MessageEvent) => {
+      if (e.data?.type === 'SANDBOX_READY') setReady(true);
+    };
+    window.addEventListener('message', handle);
+    return () => window.removeEventListener('message', handle);
+  }, []);
+
+  // Send code whenever sandbox is ready or code changes
   useEffect(() => {
     if (!ready || !cleanCode || !iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage({ type: 'RENDER', code: cleanCode }, '*');
@@ -160,7 +170,6 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
         srcDoc={SANDBOX_SRCDOC}
         style={{ width: '100%', height, border: 'none', display: ready ? 'block' : 'none', background: '#0a0a0a' }}
         sandbox="allow-scripts"
-        onLoad={() => setReady(true)}
         title="Widget Sandbox"
       />
     </div>

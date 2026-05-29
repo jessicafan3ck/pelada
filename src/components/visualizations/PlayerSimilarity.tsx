@@ -747,18 +747,34 @@ export default function ScoutPage() {
 
   return (
     <div className="bg-black rounded-2xl border border-white/[0.06] overflow-hidden">
-      <div className="px-6 pt-6 pb-4">
-        <h2 className="text-xl font-bold text-white tracking-tight">Scout</h2>
-        <p className="text-xs text-zinc-300 mt-0.5">WC 2022 Knockout Stage · {filtered.length} Players</p>
-      </div>
-      <div className="flex items-center border-b border-white/[0.05] px-6 mb-4">
-        {(['cards', 'rankings', 'scatter'] as Tab[]).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all relative ${tab === t ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}>
-            {t}
-            {tab === t && <motion.div layoutId="scout-tab" className="absolute bottom-0 left-0 right-0 h-px bg-white" />}
-          </button>
-        ))}
+      {/* GO EPIC.-style banner header */}
+      <div className="relative overflow-hidden shrink-0" style={{ height: '80px' }}>
+        <div className="absolute inset-0" style={{ background: '#7C3AED' }} />
+        <div className="absolute inset-0" style={{ background: '#F59E0B', clipPath: 'polygon(54% 0%, 100% 0%, 100% 100%, 32% 100%)' }} />
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.07 }} aria-hidden>
+          <defs>
+            <pattern id="scout-chevrons" x="0" y="0" width="40" height="28" patternUnits="userSpaceOnUse">
+              <polyline points="0,0 20,14 40,0"   stroke="black" strokeWidth="3" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              <polyline points="0,14 20,28 40,14" stroke="black" strokeWidth="3" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#scout-chevrons)" />
+        </svg>
+        <div className="relative z-10 h-full flex items-center justify-between px-6">
+          <div>
+            <div style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '2px' }}>WC 2022 · {filtered.length} Players</div>
+            <div style={{ fontSize: '26px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>Scout.</div>
+          </div>
+          <div className="flex p-1 gap-0.5 rounded-xl" style={{ background: 'rgba(0,0,0,0.10)', border: '1px solid rgba(0,0,0,0.08)' }}>
+            {(['cards', 'rankings', 'scatter'] as Tab[]).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all"
+                style={tab === t ? { background: 'rgba(0,0,0,0.18)', color: '#000' } : { color: 'rgba(0,0,0,0.38)' }}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       {toolbar}
       {tab === 'cards'    && cardsView}
