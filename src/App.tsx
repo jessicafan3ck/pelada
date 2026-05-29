@@ -98,13 +98,12 @@ function AppShell() {
         <div className="h-20 flex items-center px-6 border-b border-white/5 relative overflow-hidden shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
           <div className="flex items-center gap-3 relative z-10">
-            <div className="w-8 h-8 rounded-lg shrink-0 overflow-hidden relative">
-              {/* Clean 45° diagonal split */}
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #FBBF24 50%, #38BDF8 50%)' }} />
-              {/* W+M double chevron (the brand pattern) */}
+            <div className="w-8 h-8 rounded-lg shrink-0 overflow-hidden relative" style={{ background: '#fff' }}>
               <svg className="absolute inset-0" viewBox="0 0 32 32" width="32" height="32" aria-hidden>
-                <polyline points="1,8 8,16 16,8 24,16 31,8"   stroke="rgba(0,0,0,0.45)" strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                <polyline points="1,24 8,16 16,24 24,16 31,24" stroke="rgba(0,0,0,0.45)" strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* W — gold */}
+                <polyline points="1,8 8,16 16,8 24,16 31,8"   stroke="#F59E0B" strokeWidth="2.8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* M — green */}
+                <polyline points="1,24 8,16 16,24 24,16 31,24" stroke="#009C3B" strokeWidth="2.8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
               </svg>
             </div>
             {isSidebarOpen && (
