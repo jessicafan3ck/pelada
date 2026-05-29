@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface ReactRunnerProps {
   code: string;
@@ -125,14 +125,16 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
   const [ready, setReady] = useState(false);
   const cleanCode   = stripFences(code);
 
-  // Listen for SANDBOX_READY from iframe (more reliable than onLoad for srcdoc)
+  // Belt-and-suspenders: SANDBOX_READY postMessage + onLoad fallback
+  const markReady = useCallback(() => setReady(r => r ? r : true), []);
+
   useEffect(() => {
     const handle = (e: MessageEvent) => {
-      if (e.data?.type === 'SANDBOX_READY') setReady(true);
+      if (e.data?.type === 'SANDBOX_READY') markReady();
     };
     window.addEventListener('message', handle);
     return () => window.removeEventListener('message', handle);
-  }, []);
+  }, [markReady]);
 
   // Send code whenever sandbox is ready or code changes
   useEffect(() => {
@@ -170,6 +172,7 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
         srcDoc={SANDBOX_SRCDOC}
         style={{ width: '100%', height, border: 'none', display: ready ? 'block' : 'none', background: '#0a0a0a' }}
         sandbox="allow-scripts"
+        onLoad={markReady}
         title="Widget Sandbox"
       />
     </div>

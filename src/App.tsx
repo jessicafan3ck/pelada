@@ -99,8 +99,13 @@ function AppShell() {
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
           <div className="flex items-center gap-3 relative z-10">
             <div className="w-8 h-8 rounded-lg shrink-0 overflow-hidden relative">
-              <div className="absolute inset-0" style={{ background: '#FBBF24' }} />
-              <div className="absolute inset-0" style={{ background: '#38BDF8', clipPath: 'polygon(52% 0%, 100% 0%, 100% 100%, 32% 100%)' }} />
+              {/* Clean 45° diagonal split */}
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #FBBF24 50%, #38BDF8 50%)' }} />
+              {/* W+M double chevron (the brand pattern) */}
+              <svg className="absolute inset-0" viewBox="0 0 32 32" width="32" height="32" aria-hidden>
+                <polyline points="1,9 8,16 16,9 24,16 31,9"  stroke="rgba(0,0,0,0.45)" strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points="1,16 8,23 16,16 24,23 31,16" stroke="rgba(0,0,0,0.45)" strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              </svg>
             </div>
             {isSidebarOpen && (
               <div className="flex flex-col">
