@@ -50,38 +50,48 @@ const WIDGET_SYSTEM = `You are a football analytics widget code generator. Gener
 STRICT RULES:
 - Define exactly ONE function named "Widget" — no default export, no import statements, no export keyword
 - NO TypeScript: no type annotations (: string, : number, : any), no interfaces, no generics (<T>), no "as" casts — plain JavaScript ONLY
-- Available globals: React, useState, useEffect, useMemo, useCallback, useRef
-- Available Recharts globals: BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, ScatterChart, Scatter
+- Available React globals: React, useState, useEffect, useMemo, useCallback, useRef
+- Available chart global: Chart (Chart.js 4) — use useRef + useEffect to mount charts on <canvas> elements
 - Use the EXACT data from the user message — do NOT invent or substitute numbers
 - Dark theme: background '#18181b', card sections '#27272a', text '#e4e4e7', muted '#71717a'
-- Use vivid accent colors with strong contrast: purple #a855f7, blue #3b82f6, green #10b981, yellow #f59e0b, red #ef4444
-- EVERY chart MUST use ResponsiveContainer with width="100%" and height={260} or height={280} — never hardcode pixel widths on charts
-- All chart bars/lines/cells must use clearly visible colors — no dark-on-dark, no near-invisible strokes
+- Use vivid accent colors: purple #a855f7, blue #3b82f6, green #10b981, yellow #f59e0b, red #ef4444
+- ALWAYS call chart.destroy() in the useEffect cleanup to prevent canvas reuse errors
 - Keep the whole component under 80 lines to avoid truncation mid-render
 - Return ONLY the raw JavaScript/JSX code — no markdown fences, no backticks, no explanations, nothing before or after the function
 
 Correct example:
 function Widget() {
-  const data = [
-    { name: 'Spain', goals: 8, xg: 7.2 },
-    { name: 'Japan', goals: 4, xg: 5.1 },
-    { name: 'England', goals: 6, xg: 5.8 }
-  ];
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const chart = new Chart(ref.current, {
+      type: 'bar',
+      data: {
+        labels: ['Spain', 'Japan', 'England'],
+        datasets: [
+          { label: 'Goals', data: [8, 4, 6], backgroundColor: '#a855f7', borderRadius: 4 },
+          { label: 'xG',    data: [7.2, 5.1, 5.8], backgroundColor: '#3b82f6', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#e4e4e7', font: { size: 11 } } },
+          tooltip: { backgroundColor: '#27272a', titleColor: '#e4e4e7', bodyColor: '#a1a1aa' }
+        },
+        scales: {
+          x: { ticks: { color: '#71717a' }, grid: { color: '#3f3f46' } },
+          y: { ticks: { color: '#71717a' }, grid: { color: '#3f3f46' } }
+        }
+      }
+    });
+    return () => chart.destroy();
+  }, []);
   return (
     <div style={{ background: '#18181b', padding: '20px', borderRadius: '12px', color: '#e4e4e7' }}>
       <h3 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 700, color: '#a855f7' }}>Goals vs xG</h3>
       <p style={{ margin: '0 0 16px', fontSize: '11px', color: '#71717a' }}>WWC 2023 — knockout stage</p>
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={data} barCategoryGap="30%">
-          <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-          <XAxis dataKey="name" stroke="#71717a" fontSize={12} />
-          <YAxis stroke="#71717a" fontSize={12} />
-          <Tooltip contentStyle={{ background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px', color: '#e4e4e7' }} />
-          <Legend wrapperStyle={{ fontSize: 11, color: '#a1a1aa' }} />
-          <Bar dataKey="goals" fill="#a855f7" radius={[4,4,0,0]} name="Goals" />
-          <Bar dataKey="xg" fill="#3b82f6" radius={[4,4,0,0]} name="xG" />
-        </BarChart>
-      </ResponsiveContainer>
+      <canvas ref={ref} />
     </div>
   );
 }`;

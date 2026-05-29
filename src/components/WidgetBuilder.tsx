@@ -262,9 +262,8 @@ function buildWidgetPrompt(userRequest: string, realDataSnippet?: string): strin
 STRICT CODE RULES:
 - Define ONLY a function named Widget() — no imports, no exports
 - React hooks available in scope: useState, useEffect, useMemo, useRef
-- Recharts available: BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis
+- Charts: use Chart (Chart.js 4) via useRef + useEffect — mount on a <canvas ref={ref} /> element, always call chart.destroy() in cleanup
 - Use inline styles with dark theme (background #18181b, text #e4e4e7, muted #71717a, accent #a855f7)
-- Use ResponsiveContainer width="100%" height={300} for all charts — never hardcode a pixel width
 - Keep the widget under 80 lines to avoid truncation
 - Do NOT use TypeScript — no type annotations, no interfaces, no generics, plain JavaScript only
 
@@ -275,8 +274,7 @@ DATA & INTERACTIVITY RULES:
 - Pair every stat with a selector or label so the user knows which team/player it represents
 - Do NOT use emojis anywhere in the widget — no emoji in labels, tooltips, axis ticks, or text
 - Use vivid, readable colors for every chart element — no dark bars on dark backgrounds
-- Add a <Legend /> to every chart that shows multiple data series
-- Always include axis labels and a Tooltip
+- Set Chart.js legend labels, tick, and tooltip colors to match the dark theme (#e4e4e7 text, #3f3f46 grid)
 
 ${realDataSnippet ? `REAL WWC 2023 DATA (use these exact numbers):\n${realDataSnippet}\n` : ''}
 User request: ${userRequest}`;

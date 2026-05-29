@@ -12,13 +12,6 @@ export function stripFences(raw: string): string {
     .trim();
 }
 
-const RECHARTS_KEYS = [
-  'BarChart','Bar','LineChart','Line','AreaChart','Area',
-  'PieChart','Pie','Cell','XAxis','YAxis','CartesianGrid',
-  'Tooltip','Legend','ResponsiveContainer',
-  'RadarChart','Radar','PolarGrid','PolarAngleAxis','ScatterChart','Scatter',
-];
-
 // ─── Standalone srcdoc — used by both ReactRunner and EmbedPlayer ─────────────
 export function buildWidgetSrcdoc(rawCode: string): string {
   const code = rawCode
@@ -33,19 +26,17 @@ export function buildWidgetSrcdoc(rawCode: string): string {
   const safe = JSON.stringify(code).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
 
   const hookNames = ['React','useState','useEffect','useMemo','useRef','useCallback','useReducer'];
-  const allParams = [...hookNames, ...RECHARTS_KEYS].map(p => `"${p}"`).join(',');
+  const allParams = [...hookNames, 'Chart'].map(p => `"${p}"`).join(',');
   const hookArgs  = ['React','React.useState','React.useEffect','React.useMemo',
                      'React.useRef','React.useCallback','React.useReducer'];
-  const allArgs   = [...hookArgs, ...RECHARTS_KEYS.map(k => `R.${k}`)].join(',');
-
-  const rechartsKeys = JSON.stringify(RECHARTS_KEYS);
+  const allArgs   = [...hookArgs, 'window.Chart'].join(',');
 
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>
 <script>window.process={env:{NODE_ENV:'production'}};</script>
 <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js" onerror="window.__loadErr='React failed to load'"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js" onerror="window.__loadErr='ReactDOM failed to load'"></script>
-<script src="https://cdn.jsdelivr.net/npm/recharts@2.10.3/umd/Recharts.js" onerror="window.__loadErr='Recharts failed to load'"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" onerror="window.__loadErr='Chart.js failed to load'"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.9/babel.min.js" onerror="window.__loadErr='Babel failed to load'"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -62,9 +53,7 @@ if(window.__loadErr){showErr(window.__loadErr);return;}
 if(typeof Babel==='undefined'){showErr("Babel not loaded");return;}
 if(typeof React==='undefined'){showErr("React not loaded");return;}
 if(typeof ReactDOM==='undefined'){showErr("ReactDOM not loaded");return;}
-var R=window.Recharts||{};
-var missingR=${rechartsKeys}.filter(function(k){return!R[k];});
-if(missingR.length===${RECHARTS_KEYS.length}){showErr("Recharts not available. typeof window.Recharts="+typeof window.Recharts+". Keys found: "+Object.keys(window.Recharts||{}).slice(0,5).join(",")||"none");return;}
+if(typeof Chart==='undefined'){showErr("Chart.js not loaded — CDN may be blocked");return;}
 var c=${safe};
 try{
 var t=Babel.transform(c,{presets:["react","typescript"],sourceType:"module",filename:"widget.tsx"}).code;
