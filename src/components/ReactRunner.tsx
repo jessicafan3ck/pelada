@@ -38,12 +38,14 @@ export function buildWidgetSrcdoc(rawCode: string): string {
                      'React.useRef','React.useCallback','React.useReducer'];
   const allArgs   = [...hookArgs, ...RECHARTS_KEYS.map(k => `R.${k}`)].join(',');
 
+  const rechartsKeys = JSON.stringify(RECHARTS_KEYS);
+
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>
-<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" onerror="window.__loadErr='React failed to load from CDN'"></script>
-<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" onerror="window.__loadErr='ReactDOM failed to load from CDN'"></script>
-<script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js" onerror="window.__loadErr='Recharts failed to load from CDN'"></script>
-<script src="https://unpkg.com/@babel/standalone@7.23.9/babel.min.js" onerror="window.__loadErr='Babel failed to load from CDN'"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js" onerror="window.__loadErr='React failed to load'"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js" onerror="window.__loadErr='ReactDOM failed to load'"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.10.3/umd/Recharts.js" onerror="window.__loadErr='Recharts failed to load'"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.9/babel.min.js" onerror="window.__loadErr='Babel failed to load'"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0a0a;color:#e4e4e7;font-family:system-ui,sans-serif}
@@ -56,17 +58,19 @@ body{background:#0a0a0a;color:#e4e4e7;font-family:system-ui,sans-serif}
 var rootEl=document.getElementById("root");
 function showErr(msg){rootEl.innerHTML="<div class='err'>"+String(msg)+"</div>";}
 if(window.__loadErr){showErr(window.__loadErr);return;}
-var c=${safe};
+if(typeof Babel==='undefined'){showErr("Babel not loaded");return;}
+if(typeof React==='undefined'){showErr("React not loaded");return;}
+if(typeof ReactDOM==='undefined'){showErr("ReactDOM not loaded");return;}
 var R=window.Recharts||{};
+var missingR=${rechartsKeys}.filter(function(k){return!R[k];});
+if(missingR.length===${RECHARTS_KEYS.length}){showErr("Recharts not available (window.Recharts is empty). CDN may be blocked.");return;}
+var c=${safe};
 try{
-if(typeof Babel==='undefined')throw new Error("Babel not loaded — check network/CDN");
-if(typeof React==='undefined')throw new Error("React not loaded — check network/CDN");
-if(typeof ReactDOM==='undefined')throw new Error("ReactDOM not loaded — check network/CDN");
 var t=Babel.transform(c,{presets:["react","typescript"],sourceType:"module",filename:"widget.tsx"}).code;
 var fn=new Function(${allParams},t+"\\nreturn typeof Widget!='undefined'?Widget:null;");
 var W=fn(${allArgs});
-if(!W)throw new Error("No Widget() function found. Make sure your code defines: function Widget() { return <div>...</div>; }");
-var ErrBoundary=class extends React.Component{constructor(p){super(p);this.state={err:null};}static getDerivedStateFromError(e){return{err:e};}render(){if(this.state.err)return React.createElement('div',{className:'err'},this.state.err.message);return this.props.children;}};
+if(!W)throw new Error("No Widget() function found — define: function Widget() { return <div>...</div>; }");
+var ErrBoundary=class extends React.Component{constructor(p){super(p);this.state={err:null};}static getDerivedStateFromError(e){return{err:e};}render(){if(this.state.err)return React.createElement('div',{className:'err'},String(this.state.err));return this.props.children;}};
 ReactDOM.createRoot(rootEl).render(React.createElement(ErrBoundary,null,React.createElement(W)));
 }catch(err){showErr(err.message||String(err));}
 })();</script>
