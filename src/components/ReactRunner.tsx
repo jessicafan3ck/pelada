@@ -104,7 +104,7 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
         key={cleanCode}
         srcDoc={srcDoc}
         style={{ width: '100%', height, border: 'none', display: loaded ? 'block' : 'none', background: '#0a0a0a' }}
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
         onLoad={() => setLoaded(true)}
         title="Widget Sandbox"
       />

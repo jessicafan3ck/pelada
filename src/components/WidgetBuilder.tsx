@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { DataContext } from '../context/DataContext';
 import {
   Sparkles,
   Code,
@@ -254,13 +255,8 @@ function GeneratingPreview() {
   );
 }
 
-const WWC2023_TEAMS = [
-  'Spain','England','Sweden','Australia','Japan','France',
-  'Netherlands','Colombia','Norway','Switzerland','Morocco','Nigeria',
-  'South Korea','Jamaica','Denmark','USA',
-];
 
-function buildWidgetPrompt(userRequest: string): string {
+function buildWidgetPrompt(userRequest: string, realDataSnippet?: string): string {
   return `Generate a self-contained React widget for a football analytics dashboard.
 
 STRICT CODE RULES:
@@ -273,12 +269,13 @@ STRICT CODE RULES:
 - Do NOT use TypeScript — no type annotations, no interfaces, no generics, plain JavaScript only
 
 DATA & INTERACTIVITY RULES:
-- If the widget involves comparing teams, include a <select> dropdown for EACH team slot so the user can swap teams — default to real WWC 2023 teams: ${WWC2023_TEAMS.join(', ')}
-- If it involves players, include a player selector or at minimum show the top 5 by the relevant metric
-- All data must be hardcoded but realistic — use plausible WWC 2023 stats (xG, shots, passes, possession %)
+- Use the real WWC 2023 data provided below — do NOT invent stats
+- If the widget involves comparing teams, include a <select> dropdown for EACH team slot
+- If it involves players, show the top 5 by the relevant metric from the real data
 - Pair every stat with a selector or label so the user knows which team/player it represents
 - Do NOT use emojis anywhere in the widget — no emoji in labels, tooltips, axis ticks, or text
 
+${realDataSnippet ? `REAL WWC 2023 DATA (use these exact numbers):\n${realDataSnippet}\n` : ''}
 User request: ${userRequest}`;
 }
 
@@ -419,6 +416,7 @@ function DeployModal({ code, name, description, onClose }: {
 }
 
 export default function WidgetBuilder() {
+  const { tournamentStats } = useContext(DataContext);
   const [viewMode, setViewMode] = useState<ViewMode>('discovery');
   const [naturalLanguageInput, setNaturalLanguageInput] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -453,10 +451,18 @@ export default function WidgetBuilder() {
 
     const newHistory = [...widgetHistory, { role: 'user', content: q }];
     try {
+      // Build a compact real-data snippet from tournament stats (top 20 players by xG)
+      const realDataSnippet = tournamentStats.length
+        ? tournamentStats
+            .sort((a, b) => b.xg - a.xg)
+            .slice(0, 20)
+            .map(p => `${p.player_name} (${p.team}): xG=${p.xg.toFixed(2)}, goals=${p.goals}, assists=${p.assists}, passes=${p.passes}, passComp=${p.passes_complete}, shots=${p.shots}, pressures=${p.pressures}`)
+            .join('\n')
+        : undefined;
       const res = await fetch('/api/langgraph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: buildWidgetPrompt(q), history: widgetHistory, mode: 'widget' }),
+        body: JSON.stringify({ message: buildWidgetPrompt(q, realDataSnippet), history: widgetHistory, mode: 'widget' }),
       });
       const data = await res.json();
       if (data.code?.code) {

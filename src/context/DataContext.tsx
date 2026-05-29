@@ -128,6 +128,7 @@ interface DataContextType {
   lineups: Record<number, Record<string, LineupPlayer[]>>;
   selectedMatch: number | null;
   setSelectedMatch: (id: number | null) => void;
+  setLineupMatch: (id: number | null) => void;
   tournamentStats: TournamentPlayerStat[];
   messages: any[];
   setMessages: React.Dispatch<React.SetStateAction<any[]>>;
@@ -147,7 +148,7 @@ export const DataContext = createContext<DataContextType>({
   events: [], setEvents: () => {},
   matchMeta: [], wwcMatches: [],
   lineups: {},
-  selectedMatch: null, setSelectedMatch: () => {},
+  selectedMatch: null, setSelectedMatch: () => {}, setLineupMatch: () => {},
   tournamentStats: [],
   messages: [], setMessages: () => {},
   sessionId: 'default-session',
@@ -186,6 +187,26 @@ export const DataContextProvider = ({ children }: { children: React.ReactNode })
     });
     getWWCTournamentPlayerStats().then(setTournamentStats);
   }, []);
+
+  // Lineup-only match change — loads lineup but does NOT reload events (keeps visualizations stable)
+  const setLineupMatch = (id: number | null) => {
+    _setSelected(id);
+    if (!id || lineups[id]) return;
+    getWWCLineup(id).then(players => {
+      const byTeam: Record<string, LineupPlayer[]> = {};
+      for (const p of players) {
+        if (!byTeam[p.team]) byTeam[p.team] = [];
+        byTeam[p.team].push({
+          id: p.player_id, name: p.player_name, nickname: p.player_nickname ?? p.player_name,
+          jersey: p.jersey_number, position: p.position, position_id: p.position_id ?? 0,
+          country: p.country,
+          x: posCoords(p.position, byTeam[p.team].length).x,
+          y: posCoords(p.position, byTeam[p.team].length - 1).y,
+        });
+      }
+      setLineups(prev => ({ ...prev, [id]: byTeam }));
+    });
+  };
 
   // When selected match changes, load its events + lineups
   const setSelectedMatch = (id: number | null) => {
@@ -243,7 +264,7 @@ export const DataContextProvider = ({ children }: { children: React.ReactNode })
       events, setEvents,
       matchMeta, wwcMatches,
       lineups,
-      selectedMatch, setSelectedMatch,
+      selectedMatch, setSelectedMatch, setLineupMatch,
       tournamentStats,
       messages, setMessages,
       sessionId,
