@@ -105,8 +105,8 @@ function ChatInput({ value, onChange, onSend, placeholder = 'Ask anything...', a
           onChange={e => onChange(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && onSend()}
           placeholder={placeholder}
-          className="w-full bg-white/5 rounded-2xl pl-8 pr-14 py-4 text-sm text-white focus:outline-none transition-all placeholder:text-zinc-500"
-          style={{ border: '1.5px solid rgba(251,191,36,0.6)', boxShadow: '0 0 0 3px rgba(251,191,36,0.08)' }}
+          className="w-full bg-white/5 rounded-2xl text-sm text-white focus:outline-none transition-all placeholder:text-zinc-500"
+          style={{ border: '1.5px solid rgba(251,191,36,0.6)', boxShadow: '0 0 0 3px rgba(251,191,36,0.08)', paddingLeft: '28px', paddingRight: '56px', paddingTop: '16px', paddingBottom: '16px' }}
         />
         <button
           onClick={onSend}
@@ -382,10 +382,12 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
         {copilotTab === 'chat' ? (
           messages.length === 0 ? (
             /* ── Empty state: all 3 sections in one justify-evenly container ── */
-            <div className="flex-1 flex flex-col items-center justify-evenly px-8 text-center">
+            <div className="flex-1 flex flex-col items-center px-8 text-center">
+              <div className="flex-1" />
               <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
                 Ask me to visualize data, navigate to a section,<br />or analyze a tactical idea.
               </p>
+              <div className="flex-1" />
               <div className="flex flex-wrap gap-3 justify-center max-w-md">
                 {QUICK_PROMPTS.map(q => (
                   <button key={q.prompt} onClick={() => sendMessage(q.prompt)}
@@ -395,6 +397,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
                   </button>
                 ))}
               </div>
+              <div className="flex-1" />
               <div className="w-full max-w-3xl">
                 <ChatInput
                   value={inputValue}
@@ -405,6 +408,7 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
                   variant="amber"
                 />
               </div>
+              <div className="flex-1" />
             </div>
           ) : (
             <>
