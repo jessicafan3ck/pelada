@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const SetPieceAnalysis = () => {
   const { events } = useContext(DataContext);
-  const { activeMatchId, setCopilotQuery } = useAppContext();
+  const { setCopilotQuery } = useAppContext();
   const [selectedOrigin, setSelectedOrigin] = useState('all');
   const [selectedTeam, setSelectedTeam] = useState('all');
 
@@ -14,10 +14,7 @@ const SetPieceAnalysis = () => {
     (e.x_location_start !== null && e.y_location_start !== null) ||
     (e.x_location_end !== null && e.y_location_end !== null);
 
-  const matchEvents = useMemo(() =>
-    activeMatchId ? events.filter((e: any) => e.match_id === activeMatchId) : events,
-    [events, activeMatchId]
-  );
+  const matchEvents = events;
 
   // Get unique teams and origins
   const teams = useMemo(() => {

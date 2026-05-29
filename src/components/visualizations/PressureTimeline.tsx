@@ -5,14 +5,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const PressureTimeline = () => {
   const { events } = useContext(DataContext);
-  const { activeMatchId, setCopilotQuery } = useAppContext();
+  const { setCopilotQuery } = useAppContext();
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [timeInterval, setTimeInterval] = useState(5);
 
-  const matchEvents = useMemo(() =>
-    activeMatchId ? events.filter((e: any) => e.match_id === activeMatchId) : events,
-    [events, activeMatchId]
-  );
+  const matchEvents = events;
 
   const teams = useMemo(() => {
     const teamNames = [...new Set(matchEvents.map((e: any) => e.team_name).filter(Boolean))];
