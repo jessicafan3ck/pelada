@@ -1,6 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, X, Sparkles, Loader2, RotateCcw, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  getWWCTournamentPlayerStats,
+  getMen2022PlayerStats,
+  getWWCPlayerPool,
+  type TournamentPlayerStat,
+  type M22PlayerStat,
+  type WomenPlayer,
+} from '../../services/wwcData';
 
 // ── Types & Constants ────────────────────────────────────────────────────────
 
@@ -25,7 +33,52 @@ const RARITY_BG = {
   rare:      'linear-gradient(160deg, #00101a 0%, #002a45 40%, #00101a 100%)',
 };
 
-// ── Player Database ──────────────────────────────────────────────────────────
+// ── Country → Flag Map ───────────────────────────────────────────────────────
+
+const TEAM_FLAG: Record<string, string> = {
+  // WWC 2023 (after stripping " Women's")
+  'Australia': '🇦🇺', 'Nigeria': '🇳🇬', 'Canada': '🇨🇦',
+  'Republic of Ireland': '🇮🇪', 'Japan': '🇯🇵', 'Zambia': '🇿🇲',
+  'Spain': '🇪🇸', 'Costa Rica': '🇨🇷', 'United States': '🇺🇸',
+  'Vietnam': '🇻🇳', 'Netherlands': '🇳🇱', 'Portugal': '🇵🇹',
+  'France': '🇫🇷', 'Jamaica': '🇯🇲', 'Brazil': '🇧🇷',
+  'Panama': '🇵🇦', 'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Haiti': '🇭🇹',
+  'Denmark': '🇩🇰', 'China PR': '🇨🇳', 'Sweden': '🇸🇪',
+  'South Africa': '🇿🇦', 'New Zealand': '🇳🇿', 'Norway': '🇳🇴',
+  'Philippines': '🇵🇭', 'Switzerland': '🇨🇭', 'Germany': '🇩🇪',
+  'Morocco': '🇲🇦', 'Colombia': '🇨🇴', 'South Korea': '🇰🇷',
+  'Argentina': '🇦🇷',
+  // WC 2022 men's
+  'Qatar': '🇶🇦', 'Ecuador': '🇪🇨', 'Senegal': '🇸🇳',
+  'Iran': '🇮🇷', 'USA': '🇺🇸', 'Wales': '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+  'Tunisia': '🇹🇳', 'Ghana': '🇬🇭', 'Saudi Arabia': '🇸🇦',
+  'Mexico': '🇲🇽', 'Poland': '🇵🇱', 'Belgium': '🇧🇪',
+  'Croatia': '🇭🇷', 'Serbia': '🇷🇸', 'Cameroon': '🇨🇲',
+  'Uruguay': '🇺🇾',
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function stripWomens(s: string) { return s.replace(" Women's", ''); }
+
+function mapPosition(pos: string): Position {
+  if (!pos) return 'MID';
+  if (pos.includes('Goalkeeper')) return 'GK';
+  if (pos.includes('Wing Back') || pos.includes('Back') || pos.includes('Center Back')) return 'DEF';
+  if (pos.includes('Wing') || pos.includes('Forward') || pos.includes('Striker')) return 'FWD';
+  return 'MID';
+}
+
+function pNorm(val: number, vals: number[], lo = 50, hi = 99): number {
+  const sorted = [...vals].sort((a, b) => a - b);
+  const p5  = sorted[Math.max(0, Math.floor(sorted.length * 0.05))];
+  const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
+  if (p95 <= p5) return Math.round((lo + hi) / 2);
+  const t = Math.max(0, Math.min(1, (val - p5) / (p95 - p5)));
+  return Math.round(lo + t * (hi - lo));
+}
+
+// ── Player Database (built from Supabase) ────────────────────────────────────
 
 interface Player {
   id: string; name: string; country: string; flag: string;
@@ -33,50 +86,83 @@ interface Player {
   stats: Record<StatKey, number>;
 }
 
-const PLAYER_DB: Player[] = [
-  { id:'messi',      name:'Lionel Messi',        country:'Argentina',   flag:'🇦🇷', position:'FWD', gender:'male',
-    stats:{ shooting:94, passing:96, dribbling:97, pressing:62, physicality:68, pace:78 } },
-  { id:'mbappe',     name:'Kylian Mbappé',       country:'France',      flag:'🇫🇷', position:'FWD', gender:'male',
-    stats:{ shooting:92, passing:80, dribbling:91, pressing:74, physicality:78, pace:99 } },
-  { id:'modric',     name:'Luka Modrić',         country:'Croatia',     flag:'🇭🇷', position:'MID', gender:'male',
-    stats:{ shooting:76, passing:93, dribbling:88, pressing:80, physicality:65, pace:72 } },
-  { id:'amrabat',    name:'Sofyan Amrabat',      country:'Morocco',     flag:'🇲🇦', position:'MID', gender:'male',
-    stats:{ shooting:62, passing:72, dribbling:74, pressing:93, physicality:85, pace:76 } },
-  { id:'hakimi',     name:'Achraf Hakimi',       country:'Morocco',     flag:'🇲🇦', position:'DEF', gender:'male',
-    stats:{ shooting:72, passing:78, dribbling:82, pressing:80, physicality:76, pace:93 } },
-  { id:'gvardiol',   name:'Joško Gvardiol',      country:'Croatia',     flag:'🇭🇷', position:'DEF', gender:'male',
-    stats:{ shooting:65, passing:72, dribbling:75, pressing:82, physicality:90, pace:83 } },
-  { id:'giroud',     name:'Olivier Giroud',      country:'France',      flag:'🇫🇷', position:'FWD', gender:'male',
-    stats:{ shooting:88, passing:72, dribbling:68, pressing:76, physicality:91, pace:64 } },
-  { id:'alvarez',    name:'Julián Álvarez',      country:'Argentina',   flag:'🇦🇷', position:'FWD', gender:'male',
-    stats:{ shooting:87, passing:76, dribbling:80, pressing:85, physicality:77, pace:82 } },
-  { id:'bellingham', name:'Jude Bellingham',     country:'England',     flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', position:'MID', gender:'male',
-    stats:{ shooting:84, passing:87, dribbling:86, pressing:88, physicality:84, pace:83 } },
-  { id:'zidane',     name:'Zinédine Zidane',     country:'France',      flag:'🇫🇷', position:'MID', gender:'male',
-    stats:{ shooting:83, passing:94, dribbling:96, pressing:73, physicality:82, pace:70 } },
-  { id:'ronaldo9',   name:'Ronaldo Fenômeno',    country:'Brazil',      flag:'🇧🇷', position:'FWD', gender:'male',
-    stats:{ shooting:97, passing:78, dribbling:98, pressing:72, physicality:88, pace:97 } },
-  { id:'putellas',   name:'Alexia Putellas',     country:'Spain',       flag:'🇪🇸', position:'MID', gender:'female',
-    stats:{ shooting:84, passing:95, dribbling:92, pressing:82, physicality:72, pace:76 } },
-  { id:'kerr',       name:'Sam Kerr',            country:'Australia',   flag:'🇦🇺', position:'FWD', gender:'female',
-    stats:{ shooting:95, passing:74, dribbling:80, pressing:80, physicality:90, pace:82 } },
-  { id:'bonmati',    name:'Aitana Bonmatí',      country:'Spain',       flag:'🇪🇸', position:'MID', gender:'female',
-    stats:{ shooting:80, passing:93, dribbling:90, pressing:88, physicality:68, pace:82 } },
-  { id:'harder',     name:'Pernille Harder',     country:'Denmark',     flag:'🇩🇰', position:'MID', gender:'female',
-    stats:{ shooting:86, passing:86, dribbling:84, pressing:82, physicality:85, pace:80 } },
-  { id:'caicedo',    name:'Linda Caicedo',       country:'Colombia',    flag:'🇨🇴', position:'FWD', gender:'female',
-    stats:{ shooting:88, passing:79, dribbling:92, pressing:75, physicality:72, pace:86 } },
-  { id:'cgansen',    name:'Caroline G. Hansen',  country:'Norway',      flag:'🇳🇴', position:'FWD', gender:'female',
-    stats:{ shooting:85, passing:80, dribbling:90, pressing:78, physicality:72, pace:92 } },
-  { id:'renard',     name:'Wendie Renard',       country:'France',      flag:'🇫🇷', position:'DEF', gender:'female',
-    stats:{ shooting:74, passing:76, dribbling:67, pressing:79, physicality:93, pace:68 } },
-  { id:'oshoala',    name:'Asisat Oshoala',      country:'Nigeria',     flag:'🇳🇬', position:'FWD', gender:'female',
-    stats:{ shooting:89, passing:72, dribbling:87, pressing:76, physicality:86, pace:90 } },
-  { id:'miedema',    name:'Vivianne Miedema',    country:'Netherlands', flag:'🇳🇱', position:'FWD', gender:'female',
-    stats:{ shooting:91, passing:83, dribbling:82, pressing:74, physicality:78, pace:78 } },
-  { id:'marta',      name:'Marta',               country:'Brazil',      flag:'🇧🇷', position:'FWD', gender:'female',
-    stats:{ shooting:93, passing:84, dribbling:96, pressing:75, physicality:72, pace:88 } },
-];
+type AnyPlayerStat = TournamentPlayerStat | M22PlayerStat;
+
+function buildPlayerDb(
+  women: TournamentPlayerStat[],
+  men: M22PlayerStat[],
+  pool: WomenPlayer[],
+): Player[] {
+  const MIN_MIN = 90;
+
+  const wPosMap: Record<number, string> = {};
+  pool.forEach(p => { if (p.player_id && !wPosMap[p.player_id]) wPosMap[p.player_id] = p.position; });
+
+  type Entry = { src: AnyPlayerStat; gender: 'female' | 'male'; pos: Position };
+  const entries: Entry[] = [];
+
+  for (const w of women) {
+    if ((w.minutes_played ?? 0) < MIN_MIN) continue;
+    entries.push({ src: w, gender: 'female', pos: mapPosition(wPosMap[w.player_id] ?? '') });
+  }
+  for (const m of men) {
+    if ((m.minutes_played ?? 0) < MIN_MIN) continue;
+    entries.push({ src: m, gender: 'male', pos: mapPosition(m.position ?? '') });
+  }
+
+  // Position multipliers for physicality and pace
+  const PHYS_MUL: Record<Position, number> = { GK: 1.3, DEF: 1.4, MID: 1.0, FWD: 0.8 };
+  const PACE_MUL: Record<Position, number> = { GK: 0.5, DEF: 0.85, MID: 1.0, FWD: 1.3 };
+
+  // Raw per-90 metrics for each player
+  const raws = entries.map(({ src, pos }) => {
+    const min = Math.max(src.minutes_played, 1);
+    const xg_p90    = (src.xg  ?? 0) / min * 90;
+    const sot_ratio = src.shots > 0 ? (src.shots_on_target ?? 0) / src.shots : 0;
+    const goals_p90 = (src.goals ?? 0) / min * 90;
+    const passPct   = src.passes > 0 ? (src.passes_complete ?? 0) / src.passes : 0;
+    const kp_p90    = Math.min((src.key_passes ?? 0) / min * 90, 2);
+    const drib_p90  = (src.dribbles_complete ?? 0) / min * 90;
+    const press_p90 = (src.pressures ?? 0) / min * 90;
+    return {
+      shooting:    xg_p90 * 0.5 + sot_ratio * 0.35 + goals_p90 * 0.15,
+      passing:     passPct * 0.65 + kp_p90 * 0.35,
+      dribbling:   drib_p90,
+      pressing:    press_p90,
+      physicality: press_p90 * PHYS_MUL[pos],
+      pace:        drib_p90 * PACE_MUL[pos],
+    };
+  });
+
+  const allVals = (k: StatKey) => raws.map(r => r[k]);
+  const shootVals = allVals('shooting'), passVals = allVals('passing'),
+        dribVals  = allVals('dribbling'), pressVals = allVals('pressing'),
+        physVals  = allVals('physicality'), paceVals = allVals('pace');
+
+  const players: Player[] = entries.map(({ src, gender, pos }, i) => {
+    const country = stripWomens(src.team ?? '');
+    return {
+      id:       String(src.player_id),
+      name:     src.player_name,
+      country,
+      flag:     TEAM_FLAG[country] ?? '🏳',
+      position: pos,
+      gender,
+      stats: {
+        shooting:    pNorm(raws[i].shooting,    shootVals),
+        passing:     pNorm(raws[i].passing,     passVals),
+        dribbling:   pNorm(raws[i].dribbling,   dribVals),
+        pressing:    pNorm(raws[i].pressing,    pressVals),
+        physicality: pNorm(raws[i].physicality, physVals),
+        pace:        pNorm(raws[i].pace,        paceVals),
+      },
+    };
+  });
+
+  // Sort by OVR descending so best players appear first in search
+  players.sort((a, b) => computeOVR(b.stats) - computeOVR(a.stats));
+  return players;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -92,9 +178,9 @@ function computeOVR(stats: Record<StatKey, number>): number {
   return Math.round(STAT_KEYS.reduce((s, k) => s + stats[k] * w[k], 0));
 }
 
-function findSimilar(stats: Record<StatKey, number>): Array<{ player: Player; pct: number }> {
+function findSimilar(stats: Record<StatKey, number>, db: Player[]): Array<{ player: Player; pct: number }> {
   const vec = STAT_KEYS.map(k => stats[k]);
-  return PLAYER_DB
+  return db
     .map(p => ({ player: p, pct: Math.round(cosineSim(vec, STAT_KEYS.map(k => p.stats[k])) * 100) }))
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 2);
@@ -212,16 +298,49 @@ interface Generated {
 }
 
 export default function GoatBuilder() {
+  const [playerDb, setPlayerDb] = useState<Player[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Player | null>(null);
   const [borrowed, setBorrowed] = useState<BorrowedStat[]>([]);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<Generated | null>(null);
 
+  useEffect(() => {
+    Promise.all([
+      getWWCTournamentPlayerStats(),
+      getMen2022PlayerStats(),
+      getWWCPlayerPool(),
+    ]).then(([women, men, pool]: [TournamentPlayerStat[], M22PlayerStat[], WomenPlayer[]]) => {
+      setPlayerDb(buildPlayerDb(women, men, pool));
+      setDbLoading(false);
+    }).catch(() => setDbLoading(false));
+  }, []);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return q ? PLAYER_DB.filter(p => p.name.toLowerCase().includes(q) || p.country.toLowerCase().includes(q)) : PLAYER_DB;
-  }, [search]);
+    return q
+      ? playerDb.filter(p => p.name.toLowerCase().includes(q) || p.country.toLowerCase().includes(q))
+      : playerDb;
+  }, [search, playerDb]);
+
+  const baseStats = useMemo((): Record<StatKey, number> => {
+    if (!playerDb.length) {
+      return STAT_KEYS.reduce((o, k) => ({ ...o, [k]: 70 }), {} as Record<StatKey, number>);
+    }
+    return STAT_KEYS.reduce((o, k) => ({
+      ...o,
+      [k]: Math.round(playerDb.reduce((s, p) => s + p.stats[k], 0) / playerDb.length),
+    }), {} as Record<StatKey, number>);
+  }, [playerDb]);
+
+  const goatStats = useMemo((): Record<StatKey, number> => {
+    const out = { ...baseStats };
+    borrowed.forEach(b => { out[b.key] = b.value; });
+    return out;
+  }, [borrowed, baseStats]);
+
+  const previewOVR = computeOVR(goatStats);
 
   function borrow(key: StatKey) {
     if (!selected) return;
@@ -236,16 +355,6 @@ export default function GoatBuilder() {
 
   function reset() { setBorrowed([]); setGenerated(null); setSelected(null); setSearch(''); }
 
-  const goatStats = useMemo((): Record<StatKey, number> => {
-    const avg: Record<StatKey, number> = {} as Record<StatKey, number>;
-    STAT_KEYS.forEach(k => { avg[k] = Math.round(PLAYER_DB.reduce((s, p) => s + p.stats[k], 0) / PLAYER_DB.length); });
-    const out = { ...avg };
-    borrowed.forEach(b => { out[b.key] = b.value; });
-    return out;
-  }, [borrowed]);
-
-  const previewOVR = computeOVR(goatStats);
-
   async function generate() {
     if (borrowed.length < 2) return;
     setGenerating(true);
@@ -254,7 +363,7 @@ export default function GoatBuilder() {
     const prompt = `You are generating a player card for a football GOAT builder tool. The user has borrowed: ${borrowedDesc}. Respond with JSON only, no markdown: {"nickname": "...", "description": "..."}. Rules: nickname is 2-4 words, dramatic/poetic. description is exactly 2 punchy sentences specific to the borrowed attributes. Do not use the word GOAT.`;
     const sources: Partial<Record<StatKey, Player>> = {};
     borrowed.forEach(b => { sources[b.key] = b.player; });
-    const similar = findSimilar(goatStats);
+    const similar = findSimilar(goatStats, playerDb);
     try {
       const res = await fetch('/api/langgraph', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message:prompt, mode:'agent', history:[] }) });
       const data = await res.json();
@@ -280,7 +389,11 @@ export default function GoatBuilder() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-black text-white tracking-tight">GOAT Builder</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Borrow attributes from history's best. Build the impossible player.</p>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            {dbLoading
+              ? 'Loading player pool from WWC 2023 + WC 2022...'
+              : `${playerDb.filter(p => p.gender === 'female').length} women · ${playerDb.filter(p => p.gender === 'male').length} men · Borrow attributes from history's best.`}
+          </p>
         </div>
         {(borrowed.length > 0 || generated) && (
           <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-500 hover:text-white text-xs transition-colors">
@@ -300,8 +413,14 @@ export default function GoatBuilder() {
               className="w-full pl-8 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-xs outline-none focus:border-zinc-600 placeholder:text-zinc-700" />
           </div>
 
-          <div className="gb-scroll flex flex-col gap-0.5 max-h-52 overflow-y-auto">
-            {filtered.map(p => (
+          <div className="gb-scroll flex flex-col gap-0.5 max-h-52 overflow-y-auto relative">
+            {dbLoading ? (
+              <div className="flex flex-col gap-1.5 py-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-9 rounded-lg bg-zinc-900 animate-pulse" />
+                ))}
+              </div>
+            ) : filtered.map(p => (
               <button key={p.id} className="gb-row flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left w-full transition-colors"
                 style={{ background: selected?.id === p.id ? 'rgba(255,255,255,0.07)' : 'transparent' }}
                 onClick={() => setSelected(p)}>
@@ -377,16 +496,18 @@ export default function GoatBuilder() {
             </div>
           )}
 
-          <button onClick={generate} disabled={!canGenerate || generating}
+          <button onClick={generate} disabled={!canGenerate || generating || dbLoading}
             className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
             style={{
-              background: canGenerate ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,0.04)',
-              color: canGenerate ? '#fff' : 'rgba(255,255,255,0.2)',
-              border: 'none', cursor: canGenerate ? 'pointer' : 'not-allowed',
-              boxShadow: canGenerate ? '0 0 20px rgba(124,58,237,0.35)' : 'none',
+              background: canGenerate && !dbLoading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,0.04)',
+              color: canGenerate && !dbLoading ? '#fff' : 'rgba(255,255,255,0.2)',
+              border: 'none', cursor: canGenerate && !dbLoading ? 'pointer' : 'not-allowed',
+              boxShadow: canGenerate && !dbLoading ? '0 0 20px rgba(124,58,237,0.35)' : 'none',
             }}>
             {generating
               ? <><Loader2 size={14} style={{ animation:'gb-spin 1s linear infinite' }} /> Generating...</>
+              : dbLoading
+              ? <><Loader2 size={14} style={{ animation:'gb-spin 1s linear infinite' }} /> Loading players...</>
               : <><Sparkles size={14} /> {canGenerate ? 'Generate GOAT' : 'Pick 2+ attributes'}</>}
           </button>
         </div>

@@ -93,7 +93,7 @@ const SEED_WIDGETS: SavedWidget[] = [
     { id: 'st',  label: 'ST', x: 50, y: 15 },
     { id: 'rw',  label: 'RW', x: 80, y: 20 },
   ];
-  const PLAYERS = ['Marta','Putellas','Morgan','Harder','Bronze','Kerr','Hamm','Wambach','Sinclair','Lloyd','Henry','Rapinoe','Bonmati','Hermoso','Popp'];
+  const PLAYERS = ['Bonmatí','Kerr','Carmona','Lauren James','Russo','Caicedo','Putellas','Earps','M.Fowler','Hermoso','Horan','Bright','Miyazawa','Renard','T.Rodman','S.Smith','Arnold','Foord'];
   const [lineup, setLineup] = useState({});
   const [selected, setSelected] = useState(null);
   const filled = Object.keys(lineup).length;
