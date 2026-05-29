@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getWWCMatches, getWWCLineup, getWWCTournamentPlayerStats } from '../services/wwcData';
-import type { WWCMatch, TournamentPlayerStat } from '../services/wwcData';
+import { getWWCMatches, getWWCLineup, getWWCTournamentPlayerStats, getWWCEventsForMatch } from '../services/wwcData';
+import type { WWCMatch, TournamentPlayerStat, WWCEvent } from '../services/wwcData';
 
 // Legacy shape for LineupView/ContextPanel (already in use across the codebase)
 export interface LineupPlayer {
@@ -84,6 +84,24 @@ function posCoords(position: string, idx: number): { x: number; y: number } {
   return { x: 20 + col * 22, y: 85 - row * 18 };
 }
 
+function wwcEventToLegacy(e: WWCEvent): Event {
+  return {
+    match_id:         e.match_id,
+    team_name:        e.team,
+    from_player_name: e.player || undefined,
+    to_player_name:   e.pass_recipient || undefined,
+    event:            e.type.toLowerCase(),
+    outcome:          (e.pass_outcome || e.shot_outcome || e.dribble_outcome || '').toLowerCase() || undefined,
+    minute:           e.minute,
+    x_location_start: e.x          ?? undefined,
+    y_location_start: e.y          ?? undefined,
+    x_location_end:   (e.pass_end_x ?? e.carry_end_x) ?? undefined,
+    y_location_end:   (e.pass_end_y ?? e.carry_end_y) ?? undefined,
+    pressure:         e.under_pressure ? 'under_pressure' : undefined,
+    xg:               e.shot_xg   ?? undefined,
+  };
+}
+
 function wwcMatchToMeta(m: WWCMatch): MatchMeta {
   return {
     match_id:   m.match_id,
@@ -160,19 +178,21 @@ export const DataContextProvider = ({ children }: { children: React.ReactNode })
     getWWCMatches().then(matches => {
       setWwcMatches(matches);
       setMatchMeta(matches.map(wwcMatchToMeta));
-      // Auto-select the opening match
       if (matches.length > 0) {
-        _setSelected(matches[0].match_id);
+        const firstId = matches[0].match_id;
+        _setSelected(firstId);
+        getWWCEventsForMatch(firstId).then(evs => setEvents(evs.map(wwcEventToLegacy)));
       }
     });
     getWWCTournamentPlayerStats().then(setTournamentStats);
   }, []);
 
-  // When selected match changes, load its lineups
+  // When selected match changes, load its events + lineups
   const setSelectedMatch = (id: number | null) => {
     _setSelected(id);
     if (!id) return;
-    if (lineups[id]) return; // already cached
+    getWWCEventsForMatch(id).then(evs => setEvents(evs.map(wwcEventToLegacy)));
+    if (lineups[id]) return; // lineup already cached
     getWWCLineup(id).then(players => {
       const byTeam: Record<string, LineupPlayer[]> = {};
       for (const p of players) {
