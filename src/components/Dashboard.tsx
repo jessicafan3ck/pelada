@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useContext } from 'react';
 import {
-  ArrowRight, Star, Sparkles, Cpu, Box, BarChart2,
+  ArrowRight, Star, Cpu, Box, BarChart2,
   Target, Layout, Download, Activity, Shield, Calendar,
 } from 'lucide-react';
 import { DataContext } from '../context/DataContext';
@@ -49,7 +49,7 @@ const ARTIFACTS = [
 type Category = 'all' | 'widget' | 'model' | 'tactics' | 'formation';
 
 const CATEGORIES: { id: Category; label: string; icon: typeof Box }[] = [
-  { id: 'all',       label: 'All',        icon: Sparkles },
+  { id: 'all',       label: 'All',        icon: Activity },
   { id: 'widget',    label: 'Widgets',    icon: Box      },
   { id: 'model',     label: 'Models',     icon: Cpu      },
   { id: 'tactics',   label: 'Tactics',    icon: Target   },
@@ -392,8 +392,7 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Sparkles className="w-6 h-6 text-purple-500" />
+            <h2 className="text-3xl font-bold text-white tracking-tight">
               Discover Community Work
             </h2>
             <p className="text-zinc-400 text-sm mt-2 max-w-2xl">
@@ -481,22 +480,30 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
         </div>
 
         {/* Co-Pilot CTA */}
-        <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-[24px] border border-white/10 p-1 flex items-center justify-between backdrop-blur-sm group hover:border-white/20 transition-all">
-          <div className="flex items-center gap-6 px-6 py-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+        <div className="relative rounded-[24px] overflow-hidden group cursor-pointer" onClick={onOpenAgent}>
+          <div className="absolute inset-0" style={{ background: '#00C2A8' }} />
+          <div className="absolute right-0 top-0 bottom-0" style={{ width: '45%', background: '#E8197D', clipPath: 'polygon(22% 0%, 100% 0%, 100% 100%, 0% 100%)' }} />
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.07 }} aria-hidden>
+            <defs>
+              <pattern id="cta-chevrons" x="0" y="0" width="60" height="42" patternUnits="userSpaceOnUse">
+                <polyline points="0,0 30,21 60,0"  stroke="black" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points="0,21 30,42 60,21" stroke="black" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#cta-chevrons)" />
+          </svg>
+          <div className="relative z-10 flex items-center justify-between px-8 py-5">
             <div>
-              <h3 className="text-lg font-bold text-white">Can't find what you need?</h3>
-              <p className="text-sm text-zinc-400">Ask Pelada to generate a custom tactic, model, or widget for you.</p>
+              <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.28em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '6px' }}>Pelada Co-Pilot · AI Intelligence</div>
+              <div style={{ fontSize: '28px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>CAN'T FIND IT?<br />WE'LL BUILD IT.</div>
             </div>
+            <button
+              onClick={e => { e.stopPropagation(); onOpenAgent(); }}
+              className="mr-2 px-6 py-3 bg-black text-white font-bold text-sm rounded-xl hover:bg-zinc-900 transition-colors flex items-center gap-2 shrink-0"
+            >
+              Open Co-Pilot <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={onOpenAgent}
-            className="mr-6 px-6 py-3 bg-white text-black font-bold text-sm rounded-xl hover:bg-zinc-200 transition-colors flex items-center gap-2"
-          >
-            Open Co-Pilot <ArrowRight className="w-4 h-4" />
-          </button>
         </div>
       </div>
 

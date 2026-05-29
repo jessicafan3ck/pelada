@@ -333,31 +333,49 @@ export default function PeladaAgent({ onNavigate, currentView, isOpen, onOpenCha
   if (fullPage) {
     return (
       <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/5 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-white/[0.02] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.35)]" />
+        {/* Header — branded banner */}
+        <div className="relative overflow-hidden shrink-0" style={{ minHeight: '108px' }}>
+          <div className="absolute inset-0" style={{ background: '#00C2A8' }} />
+          <div className="absolute right-0 top-0 bottom-0" style={{ width: '42%', background: '#E8197D', clipPath: 'polygon(24% 0%, 100% 0%, 100% 100%, 0% 100%)' }} />
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.07 }} aria-hidden>
+            <defs>
+              <pattern id="cp-chevrons" x="0" y="0" width="70" height="49" patternUnits="userSpaceOnUse">
+                <polyline points="0,0 35,24.5 70,0"   stroke="black" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points="0,24.5 35,49 70,24.5" stroke="black" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#cp-chevrons)" />
+          </svg>
+          <div className="relative z-10 flex items-center justify-between px-8 h-full" style={{ minHeight: '108px' }}>
+            {/* Left wordmark */}
             <div>
-              <span className="text-base font-bold text-white">Co-Pilot</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_6px_#4ade80]" />
-                <span className="text-[10px] text-green-400 font-medium uppercase tracking-wide">Online</span>
+              <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.28em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Pelada Analytics · Data Intelligence
+              </div>
+              <div style={{ fontSize: '44px', fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: '0.88' }}>
+                CO-PILOT.
               </div>
             </div>
-          </div>
-          {/* Ask / Library tabs */}
-          <div className="flex bg-white/5 border border-white/8 rounded-xl p-1 gap-1">
-            {(['chat', 'library'] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setCopilotTab(t)}
-                className={`px-5 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
-                  copilotTab === t ? 'bg-white/15 text-white' : 'text-zinc-500 hover:text-white'
-                }`}
-              >
-                {t === 'chat' ? 'Ask' : 'Library'}
-              </button>
-            ))}
+            {/* Right: online + tabs */}
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-black/40" />
+                <span style={{ fontSize: '9px', fontWeight: 800, color: 'rgba(0,0,0,0.45)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Online</span>
+              </div>
+              <div className="flex bg-black/15 border border-black/10 rounded-xl p-1 gap-1">
+                {(['chat', 'library'] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setCopilotTab(t)}
+                    className={`px-5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      copilotTab === t ? 'bg-black/20 text-black' : 'text-black/45 hover:text-black'
+                    }`}
+                  >
+                    {t === 'chat' ? 'Ask' : 'Library'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
