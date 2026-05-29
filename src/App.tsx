@@ -100,10 +100,12 @@ function AppShell() {
           <div className="flex items-center gap-3 relative z-10">
             <div className="w-8 h-8 rounded-lg shrink-0 overflow-hidden relative" style={{ background: '#fff' }}>
               <svg className="absolute inset-0" viewBox="0 0 32 32" width="32" height="32" aria-hidden>
-                {/* W — gold, top half */}
-                <polyline points="1,5 8,13 16,5 24,13 31,5"   stroke="#F59E0B" strokeWidth="2.8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                {/* M — green, bottom half, gap between */}
-                <polyline points="1,27 8,19 16,27 24,19 31,27" stroke="#009C3B" strokeWidth="2.8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* W — gold outline then black on top */}
+                <polyline points="1,5 8,13 16,5 24,13 31,5"   stroke="#F59E0B" strokeWidth="6.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points="1,5 8,13 16,5 24,13 31,5"   stroke="#000"    strokeWidth="3"   fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* M — green outline then black on top */}
+                <polyline points="1,27 8,19 16,27 24,19 31,27" stroke="#009C3B" strokeWidth="6.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points="1,27 8,19 16,27 24,19 31,27" stroke="#000"    strokeWidth="3"   fill="none" strokeLinejoin="round" strokeLinecap="round" />
               </svg>
             </div>
             {isSidebarOpen && (
