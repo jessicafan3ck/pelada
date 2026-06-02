@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import ReactRunner, { stripFences, buildWidgetSrcdoc } from './ReactRunner';
 import EffectHouseExporter from './EffectHouseExporter';
+import TikTokDeploySection from './TikTokDeploySection';
 
 const WIDGETS_KEY = 'pelada-widgets';
 
@@ -308,6 +309,7 @@ function DeployModal({ code, name, description, onClose }: {
 }) {
   const [copied, setCopied] = useState<'url' | 'iframe' | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [showTikTok, setShowTikTok] = useState(false);
   const embedUrl = `${EMBED_BASE}/?embed=${encodeWidget(code)}`;
   const iframeSnippet = `<iframe src="${embedUrl}" width="480" height="400" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
@@ -387,30 +389,40 @@ function DeployModal({ code, name, description, onClose }: {
           </div>
         </div>
 
-        {/* Deploy targets */}
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: 'Website',     desc: 'Paste iframe anywhere',      color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', Icon: Box,      onClick: undefined },
-            { label: 'Notion',      desc: '/Embed → paste URL',         color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',    Icon: Globe,    onClick: undefined },
-            { label: 'TikTok Bio',  desc: 'Link-in-bio → URL',          color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',    Icon: Share2,   onClick: undefined },
-            { label: 'Download',    desc: 'Standalone HTML file',        color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',  Icon: Download, onClick: downloadHtml },
-          ].map(t => (
-            <button
-              key={t.label}
-              onClick={t.onClick}
-              className={`p-4 rounded-2xl border ${t.bg} text-center transition-all ${t.onClick ? 'hover:brightness-125 cursor-pointer' : 'cursor-default'}`}
-            >
-              <t.Icon className={`w-5 h-5 mx-auto mb-2 ${t.color} ${downloading && t.label === 'Download' ? 'animate-bounce' : ''}`} />
-              <div className="text-xs font-bold text-white">{t.label}</div>
-              <div className="text-[10px] text-zinc-500 mt-1">{t.desc}</div>
-            </button>
-          ))}
-        </div>
+        {/* Deploy targets / TikTok section */}
+        {showTikTok ? (
+          <TikTokDeploySection
+            widgetName={name}
+            widgetDescription={description}
+            onBack={() => setShowTikTok(false)}
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: 'Website',    desc: 'Paste iframe anywhere', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', Icon: Box,      onClick: undefined },
+                { label: 'Notion',     desc: '/Embed → paste URL',    color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',    Icon: Globe,    onClick: undefined },
+                { label: 'TikTok',     desc: 'Post with @-credit',    color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',    Icon: Share2,   onClick: () => setShowTikTok(true) },
+                { label: 'Download',   desc: 'Standalone HTML file',  color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',  Icon: Download, onClick: downloadHtml },
+              ].map(t => (
+                <button
+                  key={t.label}
+                  onClick={t.onClick}
+                  className={`p-4 rounded-2xl border ${t.bg} text-center transition-all ${t.onClick ? 'hover:brightness-125 cursor-pointer' : 'cursor-default'}`}
+                >
+                  <t.Icon className={`w-5 h-5 mx-auto mb-2 ${t.color} ${downloading && t.label === 'Download' ? 'animate-bounce' : ''}`} />
+                  <div className="text-xs font-bold text-white">{t.label}</div>
+                  <div className="text-[10px] text-zinc-500 mt-1">{t.desc}</div>
+                </button>
+              ))}
+            </div>
 
-        {/* Effect House export */}
-        <div className="border-t border-white/5 pt-4">
-          <EffectHouseExporter widgetName={name} widgetDescription={description} widgetCode={code} />
-        </div>
+            {/* Effect House export */}
+            <div className="border-t border-white/5 pt-4">
+              <EffectHouseExporter widgetName={name} widgetDescription={description} widgetCode={code} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
