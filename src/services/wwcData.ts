@@ -355,3 +355,45 @@ export async function getWWCPlayerPool(): Promise<WomenPlayer[]> {
   }
   return out;
 }
+
+// ── Network metrics (from On-Networks-for-Football-Analytics) ─────────────────
+
+export interface NetworkMetric {
+  id: number;
+  match_id: number;
+  team_id: number;
+  team_name: string | null;
+  phase: string;
+  lambda2_mean: number | null;
+  lambda2_std: number | null;
+  lambda2_max: number | null;
+  lambda2_p25: number | null;
+  lambda2_p75: number | null;
+  fragmentation_mean: number | null;
+  fragmentation_std: number | null;
+  density_mean: number | null;
+  possession_count: number | null;
+  pass_count: number | null;
+  shot_count: number | null;
+}
+
+export async function getNetworkMetricsForMatch(matchId: number): Promise<NetworkMetric[]> {
+  const { data, error } = await supabase
+    .from('wwc2023_network_metrics')
+    .select('*')
+    .eq('match_id', matchId)
+    .order('phase', { ascending: true });
+  if (error) console.error('getNetworkMetricsForMatch:', error.message);
+  return (data ?? []) as NetworkMetric[];
+}
+
+export async function getNetworkMetricsByTeam(teamId: number, phase = 'all'): Promise<NetworkMetric[]> {
+  const { data, error } = await supabase
+    .from('wwc2023_network_metrics')
+    .select('*')
+    .eq('team_id', teamId)
+    .eq('phase', phase)
+    .order('match_id', { ascending: true });
+  if (error) console.error('getNetworkMetricsByTeam:', error.message);
+  return (data ?? []) as NetworkMetric[];
+}

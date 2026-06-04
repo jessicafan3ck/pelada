@@ -301,6 +301,64 @@ function encodeWidget(code: string): string {
   return btoa(binary);
 }
 
+const FORMAT_TYPES = [
+  { value: 'twin-reveal',      label: 'Twin Reveal — side-by-side comparison' },
+  { value: 'danger-overlay',   label: 'Danger Overlay — xG / threat map' },
+  { value: 'x-vs-y',           label: 'Head-to-Head — player or team stat duel' },
+  { value: 'predict-the-play', label: 'Predict the Play — interactive tactic' },
+] as const;
+
+type FormatTypeVal = typeof FORMAT_TYPES[number]['value'];
+
+async function publishToCommunity(opts: {
+  handle: string;
+  name: string;
+  description: string;
+  formatType: FormatTypeVal | '';
+  nation: string;
+  team: string;
+}): Promise<{ formatTag: string; instanceId: string }> {
+  const creatorId = opts.handle.startsWith('@') ? opts.handle : `@${opts.handle}`;
+
+  // 1 — ensure creator exists (ignore conflict)
+  await fetch('/attribution-api/creators', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ creator_id: creatorId, tiktok_handle: creatorId.replace('@', '') }),
+  });
+
+  // 2 — create format
+  const fmtRes = await fetch('/attribution-api/formats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      origin_creator_id: creatorId,
+      name: opts.name,
+      description: opts.description,
+      ...(opts.formatType && { format_type: opts.formatType }),
+      ...(opts.nation && { nation: opts.nation }),
+      ...(opts.team && { team: opts.team }),
+    }),
+  });
+  if (!fmtRes.ok) throw new Error(`Format creation failed: ${fmtRes.status}`);
+  const { format } = await fmtRes.json();
+
+  // 3 — create instance
+  const instRes = await fetch('/attribution-api/instances', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      format_id: format.format_id,
+      maker_creator_id: creatorId,
+      maker_caption: opts.description || opts.name,
+    }),
+  });
+  if (!instRes.ok) throw new Error(`Instance creation failed: ${instRes.status}`);
+  const { instance } = await instRes.json();
+
+  return { formatTag: format.format_tag, instanceId: instance.widget_instance_id };
+}
+
 function DeployModal({ code, name, description, onClose }: {
   code: string;
   name: string;
@@ -310,6 +368,14 @@ function DeployModal({ code, name, description, onClose }: {
   const [copied, setCopied] = useState<'url' | 'iframe' | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [showTikTok, setShowTikTok] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
+  const [handle, setHandle] = useState('');
+  const [formatType, setFormatType] = useState<FormatTypeVal | ''>('');
+  const [nation, setNation] = useState('');
+  const [team, setTeam] = useState('');
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<{ formatTag: string; instanceId: string } | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const embedUrl = `${EMBED_BASE}/?embed=${encodeWidget(code)}`;
   const iframeSnippet = `<iframe src="${embedUrl}" width="480" height="400" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
@@ -389,35 +455,91 @@ function DeployModal({ code, name, description, onClose }: {
           </div>
         </div>
 
-        {/* Deploy targets / TikTok section */}
+        {/* Deploy targets */}
         {showTikTok ? (
-          <TikTokDeploySection
-            widgetName={name}
-            widgetDescription={description}
-            onBack={() => setShowTikTok(false)}
-          />
+          <TikTokDeploySection widgetName={name} widgetDescription={description} onBack={() => setShowTikTok(false)} />
+        ) : showCommunity ? (
+          <div className="space-y-4">
+            <button onClick={() => { setShowCommunity(false); setPublishResult(null); setPublishError(null); }}
+              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors">
+              ← Back
+            </button>
+
+            {publishResult ? (
+              <div className="rounded-2xl bg-green-500/10 border border-green-500/20 p-6 text-center space-y-3">
+                <Check className="w-8 h-8 text-green-400 mx-auto" />
+                <div className="text-white font-bold">Published to Community!</div>
+                <div className="text-xs text-zinc-400">
+                  Format tag: <code className="text-green-300 font-mono">#{publishResult.formatTag}</code>
+                </div>
+                <div className="text-xs text-zinc-600">Instance ID: {publishResult.instanceId}</div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">Your @handle</label>
+                    <input value={handle} onChange={e => setHandle(e.target.value)} placeholder="@yourhandle"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500/50" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">Format type</label>
+                    <select value={formatType} onChange={e => setFormatType(e.target.value as FormatTypeVal | '')}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-zinc-300 focus:outline-none focus:border-purple-500/50">
+                      <option value="">— Pick a type (optional)</option>
+                      {FORMAT_TYPES.map(ft => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">Nation</label>
+                      <input value={nation} onChange={e => setNation(e.target.value)} placeholder="Spain"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">Team</label>
+                      <input value={team} onChange={e => setTeam(e.target.value)} placeholder="Optional"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500/50" />
+                    </div>
+                  </div>
+                </div>
+                {publishError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2">{publishError}</p>}
+                <button
+                  disabled={!handle.trim() || publishing}
+                  onClick={async () => {
+                    setPublishing(true); setPublishError(null);
+                    try {
+                      const result = await publishToCommunity({ handle: handle.trim(), name, description, formatType, nation, team });
+                      setPublishResult(result);
+                    } catch (e: any) {
+                      setPublishError(e.message ?? 'Publish failed. Is the attribution server running?');
+                    } finally { setPublishing(false); }
+                  }}
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2"
+                >
+                  {publishing ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Publishing…</> : <><Globe className="w-4 h-4" /> Publish to Community</>}
+                </button>
+              </>
+            )}
+          </div>
         ) : (
           <>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               {[
                 { label: 'Website',    desc: 'Paste iframe anywhere', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', Icon: Box,      onClick: undefined },
                 { label: 'Notion',     desc: '/Embed → paste URL',    color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',    Icon: Globe,    onClick: undefined },
                 { label: 'TikTok',     desc: 'Post with @-credit',    color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',    Icon: Share2,   onClick: () => setShowTikTok(true) },
+                { label: 'Community',  desc: 'Add to library',        color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', Icon: Plus,    onClick: () => setShowCommunity(true) },
                 { label: 'Download',   desc: 'Standalone HTML file',  color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',  Icon: Download, onClick: downloadHtml },
               ].map(t => (
-                <button
-                  key={t.label}
-                  onClick={t.onClick}
-                  className={`p-4 rounded-2xl border ${t.bg} text-center transition-all ${t.onClick ? 'hover:brightness-125 cursor-pointer' : 'cursor-default'}`}
-                >
+                <button key={t.label} onClick={t.onClick}
+                  className={`p-4 rounded-2xl border ${t.bg} text-center transition-all ${t.onClick ? 'hover:brightness-125 cursor-pointer' : 'cursor-default'}`}>
                   <t.Icon className={`w-5 h-5 mx-auto mb-2 ${t.color} ${downloading && t.label === 'Download' ? 'animate-bounce' : ''}`} />
                   <div className="text-xs font-bold text-white">{t.label}</div>
                   <div className="text-[10px] text-zinc-500 mt-1">{t.desc}</div>
                 </button>
               ))}
             </div>
-
-            {/* Effect House export */}
             <div className="border-t border-white/5 pt-4">
               <EffectHouseExporter widgetName={name} widgetDescription={description} widgetCode={code} />
             </div>

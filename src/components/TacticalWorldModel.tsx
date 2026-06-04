@@ -1,24 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { RefreshCw, ExternalLink, Play, Terminal } from 'lucide-react';
 
-const SERVER_URL = 'http://localhost:8000';
+const SERVER_URL =
+  (import.meta.env.VITE_TACTICAL_MODEL_URL as string | undefined) ||
+  'http://localhost:8000';
+
+const isLocalServer =
+  SERVER_URL.startsWith('http://localhost') ||
+  SERVER_URL.startsWith('http://127.');
 
 export default function TacticalWorldModel() {
   const [key, setKey] = useState(0);
   const [iframeReady, setIframeReady] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Browsers silently block http:// iframes inside https:// pages (mixed content).
-  // When on HTTPS (Vercel), show a launch-in-tab panel instead.
+  // Only block iframe when mixing http localhost inside an https page.
+  // If SERVER_URL is https:// (Railway), the iframe works fine on Vercel too.
   const isHTTPS = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  const showLaunchPanel = isHTTPS && isLocalServer;
 
-  // On iframe reload, reset ready state and start a 5s timeout to catch silent failures
   useEffect(() => {
-    if (isHTTPS) return;
+    if (showLaunchPanel) return;
     setIframeReady(false);
     timerRef.current = setTimeout(() => setIframeReady(false), 5000);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [key, isHTTPS]);
+  }, [key, showLaunchPanel]);
 
   const handleIframeLoad = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -27,16 +33,14 @@ export default function TacticalWorldModel() {
 
   const reload = () => { setIframeReady(false); setKey(k => k + 1); };
 
-  // ── HTTPS: launch-in-tab panel ────────────────────────────────────────────
-  if (isHTTPS) {
+  // ── Launch-in-tab panel (only when local server + HTTPS page) ─────────────
+  if (showLaunchPanel) {
     return (
       <div className="flex flex-col h-[calc(100vh-200px)] min-h-[600px] animate-in fade-in duration-300">
         <div className="flex-1 rounded-3xl border border-white/8 bg-black/40 backdrop-blur-2xl relative overflow-hidden shadow-2xl flex flex-col items-center justify-center gap-8 px-12 text-center">
-          {/* Ambient glow */}
           <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-pink-500/8 blur-[120px] rounded-full pointer-events-none" />
           <div className="absolute bottom-[-10%] right-[10%] w-[40%] h-[40%] bg-sky-500/8 blur-[100px] rounded-full pointer-events-none" />
 
-          {/* Pitch icon */}
           <div className="relative z-10 w-24 h-16 rounded-xl border border-white/10 bg-[#14532d] flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.15)]">
             <div className="w-16 h-px bg-white/30 absolute" />
             <div className="w-8 h-8 rounded-full border border-white/30" />
@@ -61,10 +65,9 @@ export default function TacticalWorldModel() {
               <Play className="w-4 h-4 fill-white" />
               Launch World Sim
             </a>
-            <p className="text-zinc-600 text-xs">Opens in a new tab · requires local server running</p>
+            <p className="text-zinc-600 text-xs">Opens in a new tab</p>
           </div>
 
-          {/* Start command */}
           <div className="relative z-10 w-full max-w-md bg-black/50 border border-white/8 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Terminal className="w-3.5 h-3.5 text-zinc-500" />
@@ -80,7 +83,7 @@ export default function TacticalWorldModel() {
     );
   }
 
-  // ── HTTP (local dev): embed via iframe ────────────────────────────────────
+  // ── Iframe embed (local http dev OR production https Railway URL) ──────────
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] min-h-[600px] animate-in fade-in duration-300">
       <div className="flex items-center justify-between mb-4 px-1">
@@ -111,7 +114,6 @@ export default function TacticalWorldModel() {
       </div>
 
       <div className="flex-1 rounded-2xl overflow-hidden border border-white/8 bg-[#050505] relative shadow-2xl">
-        {/* Loading shimmer while iframe loads */}
         {!iframeReady && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-center px-8 z-10 bg-[#050505]">
             <div className="w-14 h-14 rounded-2xl bg-black/60 border border-white/8 flex items-center justify-center">
@@ -119,10 +121,16 @@ export default function TacticalWorldModel() {
             </div>
             <div>
               <p className="text-white font-semibold mb-1">Connecting to World Sim…</p>
-              <p className="text-zinc-500 text-sm mb-3">Make sure the server is running:</p>
-              <code className="block px-4 py-2 bg-black/60 border border-white/8 rounded-xl text-xs text-green-400 font-mono">
-                cd ~/tactical-world-model && uvicorn server.app:app --reload
-              </code>
+              {isLocalServer ? (
+                <>
+                  <p className="text-zinc-500 text-sm mb-3">Make sure the server is running:</p>
+                  <code className="block px-4 py-2 bg-black/60 border border-white/8 rounded-xl text-xs text-green-400 font-mono">
+                    cd ~/tactical-world-model && uvicorn server.app:app --reload
+                  </code>
+                </>
+              ) : (
+                <p className="text-zinc-500 text-sm">Waiting for server at {SERVER_URL}</p>
+              )}
             </div>
             <button
               onClick={reload}

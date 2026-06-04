@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { Maximize2, X } from 'lucide-react';
 
 interface ReactRunnerProps {
   code: string;
@@ -63,7 +64,17 @@ if(!W)throw new Error("No Widget() function found — define: function Widget() 
 var ErrBoundary=class extends React.Component{constructor(p){super(p);this.state={err:null};}static getDerivedStateFromError(e){return{err:e};}render(){if(this.state.err)return React.createElement('div',{className:'err'},String(this.state.err));return this.props.children;}};
 ReactDOM.createRoot(rootEl).render(React.createElement(ErrBoundary,null,React.createElement(W)));
 }catch(err){showErr(err.message||String(err));}
-})();</script>
+})();
+// Auto-resize: report content height to parent whenever it changes
+(function(){
+  function send(){
+    var h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight,200);
+    window.parent.postMessage({type:'pelada-resize',height:h},'*');
+  }
+  if(window.ResizeObserver){new ResizeObserver(send).observe(document.body);}
+  send();setTimeout(send,400);
+})();
+</script>
 </body></html>`;
 }
 
@@ -72,9 +83,28 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
   const cleanCode = useMemo(() => stripFences(code), [code]);
   const srcDoc    = useMemo(() => cleanCode ? buildWidgetSrcdoc(cleanCode) : '', [cleanCode]);
   const [loaded, setLoaded] = useState(false);
+  const [iframeHeight, setIframeHeight] = useState(height);
+  const [expanded, setExpanded] = useState(false);
 
-  // Reset loaded state when code changes so spinner shows during re-render
-  useEffect(() => { setLoaded(false); }, [cleanCode]);
+  useEffect(() => { setLoaded(false); setIframeHeight(height); }, [cleanCode]);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'pelada-resize' && typeof e.data.height === 'number') {
+        setIframeHeight(h => Math.max(e.data.height, height));
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [height]);
+
+  // Close expand on Escape
+  useEffect(() => {
+    if (!expanded) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [expanded]);
 
   if (!cleanCode) {
     return (
@@ -84,32 +114,80 @@ const ReactRunner = ({ code, height = 320 }: ReactRunnerProps) => {
     );
   }
 
+  const frame = (extraStyle?: React.CSSProperties) => (
+    <iframe
+      key={cleanCode}
+      srcDoc={srcDoc}
+      style={{ width: '100%', border: 'none', background: '#0a0a0a', ...extraStyle }}
+      sandbox="allow-scripts allow-same-origin"
+      onLoad={() => setLoaded(true)}
+      title="Widget Sandbox"
+    />
+  );
+
   return (
-    <div className="rounded-xl overflow-hidden border border-white/10 bg-[#0d1117]">
-      <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
-        <div className="flex gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-red-500/40 border border-red-500/60" />
-          <span className="w-3 h-3 rounded-full bg-yellow-500/40 border border-yellow-500/60" />
-          <span className="w-3 h-3 rounded-full bg-green-500/40 border border-green-500/60" />
+    <>
+      {/* ── Inline preview ── */}
+      <div className="rounded-xl overflow-hidden border border-white/10 bg-[#0d1117]">
+        <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
+          <div className="flex gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-red-500/40 border border-red-500/60" />
+            <span className="w-3 h-3 rounded-full bg-yellow-500/40 border border-yellow-500/60" />
+            <span className="w-3 h-3 rounded-full bg-green-500/40 border border-green-500/60" />
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Live Preview</span>
+          <button
+            onClick={() => setExpanded(true)}
+            className="p-1 rounded hover:bg-white/10 text-zinc-600 hover:text-zinc-300 transition-colors"
+            title="Expand preview"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Live Preview</span>
-        <div />
+        {!loaded && (
+          <div className="flex items-center justify-center gap-3 text-zinc-600 text-xs" style={{ height: iframeHeight }}>
+            <div className="w-4 h-4 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+            Loading…
+          </div>
+        )}
+        <div style={{ display: loaded ? 'block' : 'none', height: iframeHeight }}>
+          {frame({ height: iframeHeight })}
+        </div>
       </div>
-      {!loaded && (
-        <div className="flex items-center justify-center gap-3 text-zinc-600 text-xs" style={{ height }}>
-          <div className="w-4 h-4 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
-          Loading…
+
+      {/* ── Expanded modal ── */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+          onClick={() => setExpanded(false)}
+        >
+          <div
+            className="relative w-full max-w-3xl max-h-[90vh] rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal title bar */}
+            <div className="flex items-center justify-between px-5 py-3 bg-white/[0.03] border-b border-white/5 shrink-0">
+              <div className="flex gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-red-500/40 border border-red-500/60" />
+                <span className="w-3 h-3 rounded-full bg-yellow-500/40 border border-yellow-500/60" />
+                <span className="w-3 h-3 rounded-full bg-green-500/40 border border-green-500/60" />
+              </div>
+              <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Live Preview</span>
+              <button
+                onClick={() => setExpanded(false)}
+                className="p-1 rounded hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Scrollable content area */}
+            <div className="overflow-y-auto flex-1">
+              {frame({ minHeight: iframeHeight, height: iframeHeight })}
+            </div>
+          </div>
         </div>
       )}
-      <iframe
-        key={cleanCode}
-        srcDoc={srcDoc}
-        style={{ width: '100%', height, border: 'none', display: loaded ? 'block' : 'none', background: '#0a0a0a' }}
-        sandbox="allow-scripts allow-same-origin"
-        onLoad={() => setLoaded(true)}
-        title="Widget Sandbox"
-      />
-    </div>
+    </>
   );
 };
 

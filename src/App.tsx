@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Home, Target, Box, Settings, Bell, Menu,
   Cpu, Globe, Database, Calendar, MessageSquare,
-  Users2, GitBranch,
+  Users2, GitBranch, Network,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import TacticsView from './components/TacticsView';
@@ -15,13 +15,14 @@ import LineupView from './components/LineupView';
 import ContextPanel from './components/ContextPanel';
 import CommunityLibrary from './components/CommunityLibrary';
 import PlayerSimilarity from './components/visualizations/PlayerSimilarity';
+import NetworksView from './components/NetworksView';
 import { DataContextProvider } from './context/DataContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
 
 type ViewType =
   | 'dashboard' | 'copilot' | 'tactics' | 'models' | 'widgets'
   | 'history' | 'calendar'
-  | 'lineup' | 'community' | 'similarity';
+  | 'lineup' | 'community' | 'similarity' | 'networks';
 
 // Per-category accent colours — full static strings so Tailwind JIT includes them
 const CATEGORY_ACCENT = {
@@ -48,7 +49,9 @@ function AppShell() {
 
     { id: 'calendar' as ViewType,   name: 'Match Calendar',    icon: Calendar,    category: 'Explore',  analystOnly: false },
     { id: 'widgets' as ViewType,    name: 'Widget Builder',    icon: Box,         category: 'Create',   analystOnly: false },
+    { id: 'community' as ViewType,  name: 'Community',         icon: Globe,       category: 'Create',   analystOnly: false },
     { id: 'tactics' as ViewType,    name: 'Tactics Lab',       icon: Target,      category: 'Analyst',  analystOnly: true  },
+    { id: 'networks' as ViewType,   name: 'Networks',          icon: Network,     category: 'Analyst',  analystOnly: true  },
     { id: 'models' as ViewType,     name: 'Model Sandbox',     icon: Cpu,         category: 'Analyst',  analystOnly: true  },
     { id: 'history' as ViewType,    name: 'Historical Data',   icon: Database,    category: 'Analyst',  analystOnly: true  },
   ];
@@ -64,6 +67,7 @@ function AppShell() {
       case 'similarity':  return <PlayerSimilarity />;
       case 'community':   return <CommunityLibrary />;
       case 'tactics':     return <TacticsView />;
+      case 'networks':    return <NetworksView onNavigate={v => setCurrentView(v as ViewType)} />;
       case 'models':      return <ModelPlayground />;
       case 'widgets':     return <WidgetBuilder />;
       case 'calendar':    return <CalendarView />;
