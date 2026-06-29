@@ -14,8 +14,20 @@ import type { Template, MetricKey } from '../spec';
 import {
   type DataResolver, type ResolvedBindings, type Selections,
   type PlayerRecord, type RankEntry, type MetricInfo,
-  METRIC_LABELS, TEAM_COLORS,
+  METRIC_LABELS, TEAM_COLORS, SAMPLE_PLAYERS,
 } from './resolver';
+
+/** All U17 players for the Studio pickers. Falls back to the sample set if the
+ *  query fails (e.g. before the publishable key is set). */
+export async function getPlayers(): Promise<PlayerRecord[]> {
+  try {
+    const { data, error } = await supabase.from('u17wwc_player_stats').select('*').order('player_name');
+    if (error) throw new Error(error.message);
+    return (data && data.length ? data : SAMPLE_PLAYERS) as PlayerRecord[];
+  } catch {
+    return SAMPLE_PLAYERS;
+  }
+}
 
 const STATS = 'u17wwc_player_stats';
 const BOARDS = 'u17wwc_leaderboards';
@@ -69,11 +81,12 @@ export class SupabaseResolver implements DataResolver {
   }
 
   private async lineup(ids?: number[]): Promise<PlayerRecord[]> {
-    if (ids && ids.length) {
-      const { data, error } = await supabase.from(STATS).select('*').in('player_id', ids);
+    if (ids && ids.some(Boolean)) {
+      const { data, error } = await supabase.from(STATS).select('*').in('player_id', ids.filter(Boolean));
       if (error) throw new Error(error.message);
       const byId = new Map((data ?? []).map((r: PlayerRecord) => [r.player_id, r]));
-      return ids.map(i => byId.get(i)).filter(Boolean) as PlayerRecord[];
+      // Preserve slot order — empty slots stay null so the pitch shows an open slot.
+      return ids.map(i => byId.get(i) ?? null) as unknown as PlayerRecord[];
     }
     // No picker selection yet → default to a strong sample XI so the pitch renders.
     const { data, error } = await supabase.from(STATS).select('*').order('line_breaks', { ascending: false }).limit(11);

@@ -13,13 +13,14 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
-import type { Template, MetricBinding, TextBinding } from '../templates/spec';
-import { mockResolver, METRIC_LABELS, type ResolvedBindings } from '../templates/engine/resolver';
-import { supabaseResolver } from '../templates/engine/SupabaseResolver';
+import type { Template, MetricBinding, TextBinding, LineupBinding } from '../templates/spec';
+import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
+import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
 import { attributionBill } from '../attribution/model';
+import LineupPicker from './studio/LineupPicker';
 
 const CREATOR_HANDLE = '@you';
 
@@ -73,6 +74,36 @@ export default function StudioView() {
     () => Object.entries(template.bindings).filter(([, b]) => b.kind === 'text') as [string, TextBinding][],
     [template]
   );
+  const lineupBindings = useMemo(
+    () => Object.entries(template.bindings).filter(([, b]) => b.kind === 'lineup') as [string, LineupBinding][],
+    [template]
+  );
+
+  // All U17 players for the pickers (live, with sample fallback).
+  const [players, setPlayers] = useState<PlayerRecord[]>([]);
+  useEffect(() => { getPlayers().then(setPlayers); }, []);
+
+  // Seed each lineup with the auto top-11 so the picker and pitch agree (unless a
+  // remix link already prefilled it). The creator edits slots from there.
+  useEffect(() => {
+    if (!players.length) return;
+    lineupBindings.forEach(([id]) => {
+      const cur = selections[id] as number[] | undefined;
+      if (cur && cur.some(Boolean)) return;
+      const top = [...players]
+        .sort((a, x) => Number(x.line_breaks ?? 0) - Number(a.line_breaks ?? 0))
+        .slice(0, 11).map(p => p.player_id);
+      setSelections(s => ({ ...s, [id]: top }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players, template]);
+
+  // The metric currently selected — pickers show each player's value for it.
+  const currentMetric = useMemo(() => {
+    const mb = metricBindings[0];
+    if (!mb) return 'line_breaks';
+    return (selections[mb[0]] as string) ?? mb[1].default;
+  }, [metricBindings, selections]);
 
   // Cross-type attribution: the template's author + every capability it renders
   // (and that capability's author). Today the capabilities are 'pelada' seed
@@ -187,12 +218,18 @@ export default function StudioView() {
             </div>
           ))}
 
-          {/* Placeholder for the data pickers that need the DB */}
-          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
-            <p className="text-[11px] text-zinc-500 leading-relaxed">
-              <span className="text-zinc-300 font-semibold">Player &amp; lineup pickers</span> are next — for now the XI auto-fills with the tournament's top 11 by line-breaks (live data) so you can see it render.
-            </p>
-          </div>
+          {lineupBindings.map(([id, b]) => (
+            <div key={id}>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">{b.label}</label>
+              <LineupPicker
+                formation={b.formation}
+                value={(selections[id] as number[]) ?? []}
+                onChange={ids => set(id, ids)}
+                players={players}
+                metricKey={currentMetric}
+              />
+            </div>
+          ))}
 
           <button
             onClick={handleExport}

@@ -68,7 +68,7 @@ export function resolveRef(resolved: ResolvedBindings, ref: BindingRef): unknown
 // ─────────────────────────────────────────────────────────────────────────────
 
 // A small, realistic fixture. Values are representative of the dry-run output.
-const FIXTURE: PlayerRecord[] = [
+export const SAMPLE_PLAYERS: PlayerRecord[] = [
   mk(10, 'Pau Comendador', 'SPAIN', 9, 'Center Forward',  { goals: 5, shots: 19, line_breaks: 71, pressings: 88, ball_progressions: 64, passes: 410, passes_complete: 351 }),
   mk(11, 'Jocelyn Travers', 'USA', 8, 'Center Midfield',  { goals: 2, shots: 11, line_breaks: 98, pressings: 121, ball_progressions: 90, passes: 612, passes_complete: 540 }),
   mk(12, 'Erica Parkinson', 'ENGLAND', 6, 'Defensive Mid',{ goals: 1, shots: 6,  line_breaks: 64, pressings: 186, ball_progressions: 41, passes: 498, passes_complete: 430 }),
@@ -105,19 +105,22 @@ export class MockResolver implements DataResolver {
           break;
         }
         case 'player':
-          out[id] = FIXTURE.find(p => p.player_id === (sel ?? binding.default)) ?? FIXTURE[0];
+          out[id] = SAMPLE_PLAYERS.find(p => p.player_id === (sel ?? binding.default)) ?? SAMPLE_PLAYERS[0];
           break;
         case 'team':
           out[id] = { team_id: 0, name: (sel as string) ?? 'SPAIN', primaryColor: TEAM_COLORS[(sel as string) ?? 'SPAIN'] };
           break;
         case 'lineup': {
-          const ids = (sel as number[]) ?? binding.default ?? FIXTURE.slice(0, 11).map(p => p.player_id);
-          out[id] = ids.map(pid => FIXTURE.find(p => p.player_id === pid)).filter(Boolean);
+          const ids = (sel as number[] | undefined)?.some(Boolean)
+            ? (sel as number[])
+            : (binding.default ?? SAMPLE_PLAYERS.slice(0, 11).map(p => p.player_id));
+          // Preserve slot order (null = empty slot).
+          out[id] = ids.map(pid => SAMPLE_PLAYERS.find(p => p.player_id === pid) ?? null);
           break;
         }
         case 'leaderboard': {
           const metricKey = resolveLeaderboardMetric(template, binding.metric, selections);
-          const ranked = [...FIXTURE]
+          const ranked = [...SAMPLE_PLAYERS]
             .sort((a, b) => (Number(b[metricKey]) - Number(a[metricKey])) * (binding.order === 'asc' ? -1 : 1))
             .slice(0, binding.limit)
             .map((p, i): RankEntry => ({ rank: i + 1, player_id: p.player_id, player_name: p.player_name, team: p.team, value: Number(p[metricKey]) }));
@@ -127,7 +130,7 @@ export class MockResolver implements DataResolver {
         case 'comparison': {
           const players = binding.players.map(ref => {
             const pid = selections[ref.fromBinding] ?? template.bindings[ref.fromBinding];
-            return FIXTURE.find(p => p.player_id === pid) ?? FIXTURE[0];
+            return SAMPLE_PLAYERS.find(p => p.player_id === pid) ?? SAMPLE_PLAYERS[0];
           });
           out[id] = { players, metrics: binding.metrics };
           break;
