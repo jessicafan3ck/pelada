@@ -4,7 +4,6 @@
  * downloads `url` (an S3 link with download Content-Disposition).
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRenderProgress } from '@remotion/lambda/client';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,6 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!renderId || !bucketName) return res.status(400).json({ error: 'missing renderId/bucketName' });
 
   try {
+    const { getRenderProgress } = await import('@remotion/lambda/client');
     const p = await getRenderProgress({ renderId, bucketName, functionName, region });
     return res.json({
       done: p.done,

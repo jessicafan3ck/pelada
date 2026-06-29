@@ -7,7 +7,6 @@
  * render-service/README.md).
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { renderMediaOnLambda } from '@remotion/lambda/client';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,6 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Dynamic import so an import-time failure surfaces as a readable JSON error
+    // (and loads the ESM client cleanly inside the serverless runtime).
+    const { renderMediaOnLambda } = await import('@remotion/lambda/client');
     const { template, resolved, creatorHandle } = req.body ?? {};
     if (!template) return res.status(400).json({ error: 'missing template' });
 
