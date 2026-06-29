@@ -32,11 +32,14 @@ export function StatChip({ label, value, accent }: BaseProps & { label?: string;
     </div>
   );
 }
-export function HeroStat({ value, label, accent }: BaseProps & { value?: number | string; label?: string }) {
+export function HeroStat({ value, label, entry, metric, accent }: BaseProps & { value?: number | string; label?: string; entry?: RankEntry; metric?: MetricInfo }) {
+  const v = entry ? entry.value : value;
+  const l = metric?.label ?? label;
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 220, fontWeight: 900, lineHeight: 0.9, color: accent, textShadow: `0 8px 40px ${accent}88` }}>{value}</div>
-      <div style={{ fontSize: 38, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fff' }}>{label}</div>
+      <div style={{ fontSize: 240, fontWeight: 900, lineHeight: 0.85, color: accent, textShadow: `0 8px 40px ${accent}88` }}>{v}</div>
+      <div style={{ fontSize: 40, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fff', marginTop: 8 }}>{l}</div>
+      {entry && <div style={{ fontSize: 34, fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 20 }}>{entry.player_name} · {entry.team}</div>}
     </div>
   );
 }
@@ -113,7 +116,36 @@ export function StatBar({ label, value, accent }: BaseProps & { label?: string; 
   return <div style={{ width: '100%' }}><div style={{ fontSize: 24, color: '#fff', marginBottom: 6 }}>{label}: {value}</div><div style={{ height: 16, background: accent, borderRadius: 8, width: `${Math.min(100, Number(value))}%` }} /></div>;
 }
 export function Radar({ accent }: BaseProps) { return <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: `2px dashed ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, fontWeight: 800 }}>RADAR</div>; }
-export function TierGrid({ accent }: BaseProps) { return <div style={{ width: '100%', height: '100%', border: `2px dashed ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, fontWeight: 800 }}>TIER GRID</div>; }
+const TIERS: { key: string; color: string; lo: number; hi: number }[] = [
+  { key: 'S', color: '#ef4444', lo: 1, hi: 2 },
+  { key: 'A', color: '#f59e0b', lo: 3, hi: 5 },
+  { key: 'B', color: '#10b981', lo: 6, hi: 9 },
+  { key: 'C', color: '#3b82f6', lo: 10, hi: 13 },
+  { key: 'D', color: '#a855f7', lo: 14, hi: 999 },
+];
+
+export function TierGrid({ entries }: BaseProps & { entries?: RankEntry[]; metric?: MetricInfo }) {
+  const list = entries ?? [];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', height: '100%' }}>
+      {TIERS.map(t => {
+        const members = list.filter(e => e.rank >= t.lo && e.rank <= t.hi);
+        return (
+          <div key={t.key} style={{ display: 'flex', gap: 12, flex: 1, minHeight: 0 }}>
+            <div style={{ width: 96, background: t.color, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, fontWeight: 900, color: '#000', flexShrink: 0 }}>{t.key}</div>
+            <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, display: 'flex', flexWrap: 'wrap', gap: 8, alignContent: 'center', padding: '8px 14px' }}>
+              {members.map(e => (
+                <div key={e.player_id} style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid ${t.color}66`, borderRadius: 10, padding: '6px 12px', fontSize: 24, fontWeight: 700, color: '#fff' }}>
+                  {lastName(e.player_name)} <span style={{ color: t.color, fontWeight: 900 }}>{e.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export const PRIMITIVES: Record<string, React.ComponentType<BaseProps & Record<string, unknown>>> = {
   headline: Headline, subhead: Subhead, caption: Caption,

@@ -149,4 +149,107 @@ export const WONDERKID_COUNTDOWN: Template = {
   },
 };
 
-export const SEED_TEMPLATES: Template[] = [BUILD_YOUR_XI, WONDERKID_COUNTDOWN];
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. PLAYER TIER LIST — ranking format (S/A/B/C/D, the most-validated viral shape)
+//    Auto-tiers the top players by a metric from the precomputed leaderboard.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const TIER_LIST: Template = {
+  id: 'tier-list',
+  version: 1,
+  meta: {
+    name: 'Player Tier List',
+    tagline: 'Rank the U17 standouts S–A–B–C–D — backed by the data, not vibes.',
+    category: 'ranking',
+    authorId: 'pelada',
+  },
+  canvas: { aspect: '9:16', width: 1080, height: 1920 },
+  style: { accent: { fixed: '#3b82f6' }, background: { kind: 'mesh' }, footer: { show: true } },
+  bindings: {
+    title: { kind: 'text', label: 'Title', default: 'U17 TIER LIST', maxLength: 24 },
+    metric: {
+      kind: 'metric',
+      label: 'Tier by',
+      options: ['line_breaks', 'pressings', 'goals', 'ball_progressions'],
+      default: 'line_breaks',
+    },
+    ranking: {
+      kind: 'leaderboard',
+      label: 'Players',
+      metric: { fromBinding: 'metric' },
+      scope: 'tournament',
+      order: 'desc',
+      limit: 14,
+    },
+  },
+  scenes: [
+    {
+      id: 'grid',
+      durationMs: 0,
+      transition: 'fade',
+      components: [
+        { id: 'title', type: 'headline', layout: { x: 0.06, y: 0.05, w: 0.88, h: 0.08, align: 'center' }, data: { text: { binding: 'title' } } },
+        { id: 'tiers', type: 'tierGrid', layout: { x: 0.05, y: 0.16, w: 0.9, h: 0.72 }, data: { entries: { binding: 'ranking' }, metric: { binding: 'metric' } } },
+      ],
+    },
+  ],
+  remix: {
+    remixSlots: ['metric'],
+    captionTemplate: 'My U17 tier list 🔥 agree or fight me? {{credit}} {{hashtag}}',
+    publishable: true,
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. STAT DROP — reveal format (one jaw-dropping number, scroll-stopper)
+//    The tournament leader in the chosen metric, shown as a giant stat.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const STAT_DROP: Template = {
+  id: 'stat-drop',
+  version: 1,
+  meta: {
+    name: 'Stat Drop',
+    tagline: 'One jaw-dropping U17 number — the kind that stops the scroll.',
+    category: 'reveal',
+    authorId: 'pelada',
+  },
+  canvas: { aspect: '9:16', width: 1080, height: 1920 },
+  style: { accent: { fixed: '#a855f7' }, background: { kind: 'mesh' }, footer: { show: true } },
+  bindings: {
+    title: { kind: 'text', label: 'Hook', default: 'NOBODY IS TALKING ABOUT THIS', maxLength: 30 },
+    metric: {
+      kind: 'metric',
+      label: 'Stat',
+      options: ['pressings', 'line_breaks', 'goals', 'ball_progressions', 'tackles'],
+      default: 'pressings',
+    },
+    ranking: {
+      kind: 'leaderboard',
+      label: 'Leader',
+      metric: { fromBinding: 'metric' },
+      scope: 'tournament',
+      order: 'desc',
+      limit: 1,
+    },
+  },
+  scenes: [
+    {
+      id: 'card',
+      durationMs: 0,
+      transition: 'pop',
+      components: [
+        { id: 'hook', type: 'headline', layout: { x: 0.06, y: 0.1, w: 0.88, h: 0.12, align: 'center' }, data: { text: { binding: 'title' } }, anim: { style: 'fade-in' } },
+        { id: 'hero', type: 'heroStat', layout: { x: 0.06, y: 0.34, w: 0.88, h: 0.4 }, data: { entry: { binding: 'ranking', index: 0 }, metric: { binding: 'metric' } }, anim: { style: 'count-up' } },
+        { id: 'sub', type: 'subhead', layout: { x: 0.06, y: 0.78, w: 0.88, h: 0.06, align: 'center' }, props: { text: "FIFA U17 Women's World Cup" } },
+      ],
+    },
+  ],
+  remix: {
+    remixSlots: ['metric'],
+    captionTemplate: 'U17 stat drop 🤯 did you know? {{credit}} {{hashtag}}',
+    publishable: true,
+  },
+};
+
+export const SEED_TEMPLATES: Template[] = [BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP];
