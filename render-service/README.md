@@ -10,9 +10,18 @@ Flow: browser → `/api/render` (Vercel fn, holds AWS creds) → `renderMediaOnL
 
 ## One-time setup
 
-1. **AWS account + IAM user** with the Remotion Lambda permissions — follow
-   <https://www.remotion.dev/docs/lambda/setup> (create the role/user, get an
-   access key). Costs: only per render (Lambda + a little S3); no idle cost.
+1. **AWS IAM** — least-privilege, NOT a wildcard `*` policy. Use the **JSON**
+   editor (not the visual editor) and paste the policies Remotion generates.
+   Full guide: <https://www.remotion.dev/docs/lambda/setup>. The shape:
+   - **Role** named exactly `remotion-lambda-role` (Lambda service role), policy
+     named exactly `remotion-lambda-policy` →
+     `npx remotion lambda policies role` prints the JSON.
+   - **User** (e.g. `remotion-user`) with its own policy →
+     `npx remotion lambda policies user` prints the JSON. Give this user a
+     programmatic access key.
+   - Validate: `npx remotion lambda policies validate`.
+   (Run the `npx remotion …` commands from this `render-service/` dir after
+   `npm install`.) Costs: per render only (Lambda + a little S3); no idle cost.
 
 2. **Deploy the function + site** (from this `render-service/` dir):
    ```bash
