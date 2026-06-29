@@ -1,76 +1,106 @@
 import { useState, useEffect } from 'react';
 import {
-  Home, Target, Box, Settings, Bell, Menu,
-  Cpu, Globe, Database, Calendar, MessageSquare,
-  Users2, GitBranch, Network,
+  Home, Box, Boxes, Settings, Bell, Menu,
+  Globe, Calendar, MessageSquare, Users2, GitBranch,
+  Layers, Target, Network, Cpu, Database, Palette, Wrench, LineChart,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
-import TacticsView from './components/TacticsView';
-import ModelPlayground from './components/ModelPlayground';
+import StudioView from './components/StudioView';
 import WidgetBuilder from './components/WidgetBuilder';
-import HistoricalAnalysis from './components/HistoricalAnalysis';
 import CalendarView from './components/CalendarView';
 import PeladaAgent from './components/PeladaAgent';
 import LineupView from './components/LineupView';
 import ContextPanel from './components/ContextPanel';
 import CommunityLibrary from './components/CommunityLibrary';
 import PlayerSimilarity from './components/visualizations/PlayerSimilarity';
+import CapabilitiesView from './components/CapabilitiesView';
+import TacticsView from './components/TacticsView';
 import NetworksView from './components/NetworksView';
+import ModelPlayground from './components/ModelPlayground';
+import HistoricalAnalysis from './components/HistoricalAnalysis';
 import { DataContextProvider } from './context/DataContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
 
 type ViewType =
-  | 'dashboard' | 'copilot' | 'tactics' | 'models' | 'widgets'
-  | 'history' | 'calendar'
-  | 'lineup' | 'community' | 'similarity' | 'networks';
+  | 'dashboard' | 'copilot' | 'studio' | 'widgets'
+  | 'calendar' | 'lineup' | 'community' | 'similarity'
+  | 'capabilities' | 'tactics' | 'networks' | 'models' | 'history';
+
+// The three on-platform role surfaces. Viewers are off-platform (not a workspace).
+type Workspace = 'Create' | 'Build' | 'Analyze';
+const WORKSPACES: { id: Workspace; label: string; icon: typeof Palette; blurb: string }[] = [
+  { id: 'Create',  label: 'Create',  icon: Palette,   blurb: 'Make & deploy artifacts' },
+  { id: 'Build',   label: 'Build',   icon: Wrench,    blurb: 'Contribute capabilities' },
+  { id: 'Analyze', label: 'Analyze', icon: LineChart, blurb: 'Pro analysis (AI Pro)' },
+];
 
 // Per-category accent colours — full static strings so Tailwind JIT includes them
 const CATEGORY_ACCENT = {
   General: { grad: 'from-sky-500/20 to-blue-700/5',     icon: 'text-sky-400',    dot: 'bg-sky-400',    dotGlow: 'shadow-[0_0_8px_rgba(56,189,248,0.8)]',    label: 'text-sky-600'    },
   Explore: { grad: 'from-green-500/20 to-emerald-700/5', icon: 'text-green-400',  dot: 'bg-green-400',  dotGlow: 'shadow-[0_0_8px_rgba(74,222,128,0.8)]',   label: 'text-green-600'  },
   Create:  { grad: 'from-yellow-500/20 to-orange-500/5', icon: 'text-yellow-400', dot: 'bg-yellow-400', dotGlow: 'shadow-[0_0_8px_rgba(250,204,21,0.8)]',   label: 'text-yellow-600' },
-  Analyst: { grad: 'from-pink-500/20 to-rose-700/5',     icon: 'text-pink-400',   dot: 'bg-pink-400',   dotGlow: 'shadow-[0_0_8px_rgba(244,114,182,0.8)]',  label: 'text-pink-600'   },
+  Build:   { grad: 'from-cyan-500/20 to-teal-700/5',     icon: 'text-cyan-400',   dot: 'bg-cyan-400',   dotGlow: 'shadow-[0_0_8px_rgba(34,211,238,0.8)]',   label: 'text-cyan-600'   },
+  Analyze: { grad: 'from-pink-500/20 to-rose-700/5',     icon: 'text-pink-400',   dot: 'bg-pink-400',   dotGlow: 'shadow-[0_0_8px_rgba(244,114,182,0.8)]',  label: 'text-pink-600'   },
 } as const;
 
+const INITIAL_VIEW = (new URLSearchParams(window.location.search).get('view') as ViewType) || 'dashboard';
+const VIEW_WORKSPACE: Partial<Record<ViewType, Workspace>> = {
+  capabilities: 'Build', tactics: 'Analyze', networks: 'Analyze', models: 'Analyze', history: 'Analyze',
+};
+const INITIAL_WORKSPACE: Workspace = VIEW_WORKSPACE[INITIAL_VIEW] ?? 'Create';
+
 function AppShell() {
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewType>(INITIAL_VIEW);
+  const [workspace, setWorkspace] = useState<Workspace>(INITIAL_WORKSPACE);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { userMode, setUserMode, copilotQuery } = useAppContext();
+  const { copilotQuery } = useAppContext();
 
   useEffect(() => {
-    if (copilotQuery) setCurrentView('copilot');
+    if (copilotQuery) { setWorkspace('Create'); setCurrentView('copilot'); }
   }, [copilotQuery]);
 
   const allNavItems = [
-    { id: 'dashboard' as ViewType,  name: 'Hub',               icon: Home,        category: 'General',  analystOnly: false },
-    { id: 'copilot' as ViewType,    name: 'Co-Pilot',          icon: MessageSquare, category: 'General', analystOnly: false },
-    { id: 'lineup' as ViewType,      name: 'Lineup',            icon: Users2,      category: 'Explore',  analystOnly: false },
-    { id: 'similarity' as ViewType, name: 'Scout',             icon: GitBranch,   category: 'Explore',  analystOnly: false },
-
-    { id: 'calendar' as ViewType,   name: 'Match Calendar',    icon: Calendar,    category: 'Explore',  analystOnly: false },
-    { id: 'widgets' as ViewType,    name: 'Widget Builder',    icon: Box,         category: 'Create',   analystOnly: false },
-    { id: 'community' as ViewType,  name: 'Community',         icon: Globe,       category: 'Create',   analystOnly: false },
-    { id: 'tactics' as ViewType,    name: 'Tactics Lab',       icon: Target,      category: 'Analyst',  analystOnly: true  },
-    { id: 'networks' as ViewType,   name: 'Networks',          icon: Network,     category: 'Analyst',  analystOnly: true  },
-    { id: 'models' as ViewType,     name: 'Model Sandbox',     icon: Cpu,         category: 'Analyst',  analystOnly: true  },
-    { id: 'history' as ViewType,    name: 'Historical Data',   icon: Database,    category: 'Analyst',  analystOnly: true  },
+    // Create workspace
+    { id: 'dashboard' as ViewType,  name: 'Discover',       icon: Home,          category: 'General', workspace: 'Create' as Workspace },
+    { id: 'copilot' as ViewType,    name: 'Co-Pilot',       icon: MessageSquare, category: 'General', workspace: 'Create' as Workspace },
+    { id: 'studio' as ViewType,     name: 'Studio',         icon: Boxes,         category: 'Create',  workspace: 'Create' as Workspace },
+    { id: 'widgets' as ViewType,    name: 'Widget Builder', icon: Box,           category: 'Create',  workspace: 'Create' as Workspace },
+    { id: 'community' as ViewType,  name: 'Community',       icon: Globe,         category: 'Create',  workspace: 'Create' as Workspace },
+    { id: 'lineup' as ViewType,     name: 'Lineup',         icon: Users2,        category: 'Explore', workspace: 'Create' as Workspace },
+    { id: 'similarity' as ViewType, name: 'Scout',          icon: GitBranch,     category: 'Explore', workspace: 'Create' as Workspace },
+    { id: 'calendar' as ViewType,   name: 'Match Calendar', icon: Calendar,      category: 'Explore', workspace: 'Create' as Workspace },
+    // Build workspace (Technical)
+    { id: 'capabilities' as ViewType, name: 'Capabilities', icon: Layers,        category: 'Build',   workspace: 'Build' as Workspace },
+    // Analyze workspace (the existing AI Pro suite)
+    { id: 'tactics' as ViewType,    name: 'Tactics Lab',    icon: Target,        category: 'Analyze', workspace: 'Analyze' as Workspace },
+    { id: 'networks' as ViewType,   name: 'Networks',       icon: Network,       category: 'Analyze', workspace: 'Analyze' as Workspace },
+    { id: 'models' as ViewType,     name: 'Model Sandbox',  icon: Cpu,           category: 'Analyze', workspace: 'Analyze' as Workspace },
+    { id: 'history' as ViewType,    name: 'Historical Data',icon: Database,      category: 'Analyze', workspace: 'Analyze' as Workspace },
   ];
 
-  const visibleNav = allNavItems.filter(i => userMode === 'analyst' || !i.analystOnly);
+  const switchWorkspace = (ws: Workspace) => {
+    setWorkspace(ws);
+    const first = allNavItems.find(i => i.workspace === ws);
+    if (first) setCurrentView(first.id);
+  };
+
+  const visibleNav = allNavItems.filter(i => i.workspace === workspace);
   const categories = [...new Set(visibleNav.map(i => i.category))];
 
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':   return <Dashboard onOpenAgent={() => setCurrentView('copilot')} onNavigate={v => setCurrentView(v as ViewType)} />;
-      case 'copilot':     return <PeladaAgent onNavigate={setCurrentView} currentView={currentView} isOpen={true} onOpenChange={() => {}} fullPage />;
+      case 'copilot':     return <PeladaAgent onNavigate={(v) => setCurrentView(v as ViewType)} currentView={currentView} isOpen={true} onOpenChange={() => {}} fullPage />;
+      case 'studio':      return <StudioView />;
       case 'lineup':      return <LineupView />;
       case 'similarity':  return <PlayerSimilarity />;
       case 'community':   return <CommunityLibrary />;
+      case 'widgets':     return <WidgetBuilder />;
+      case 'calendar':    return <CalendarView />;
+      case 'capabilities':return <CapabilitiesView />;
       case 'tactics':     return <TacticsView />;
       case 'networks':    return <NetworksView onNavigate={v => setCurrentView(v as ViewType)} />;
       case 'models':      return <ModelPlayground />;
-      case 'widgets':     return <WidgetBuilder />;
-      case 'calendar':    return <CalendarView />;
       case 'history':     return <HistoricalAnalysis />;
       default:            return <Dashboard onOpenAgent={() => setCurrentView('copilot')} onNavigate={v => setCurrentView(v as ViewType)} />;
     }
@@ -103,6 +133,29 @@ function AppShell() {
                 <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>Analytics OS</span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Workspace switcher — the three on-platform role surfaces */}
+        <div className="px-3 pt-4 shrink-0">
+          <div className={`flex bg-white/5 rounded-xl p-1 border border-white/8 ${!isSidebarOpen ? 'flex-col gap-1' : 'gap-0.5'}`}>
+            {WORKSPACES.map(ws => {
+              const Icon = ws.icon;
+              const active = workspace === ws.id;
+              return (
+                <button
+                  key={ws.id}
+                  onClick={() => switchWorkspace(ws.id)}
+                  title={ws.blurb}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    active ? 'bg-white/10 text-white border border-white/10 shadow-[0_0_12px_rgba(255,255,255,0.06)]' : 'text-zinc-500 hover:text-zinc-300'
+                  } ${!isSidebarOpen ? 'px-0' : 'px-1'}`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  {isSidebarOpen && <span>{ws.label}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -140,32 +193,8 @@ function AppShell() {
           })}
         </div>
 
-        {/* Mode toggle + user */}
+        {/* User */}
         <div className="p-4 border-t border-white/5 bg-black/20 space-y-3 shrink-0">
-          {/* Fan / Analyst toggle */}
-          <div className={`flex bg-white/5 rounded-xl p-1 border border-white/8 ${!isSidebarOpen ? 'flex-col gap-1' : ''}`}>
-            <button
-              onClick={() => setUserMode('fan')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                userMode === 'fan'
-                  ? 'bg-sky-500/20 text-sky-200 border border-sky-500/20'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              } ${!isSidebarOpen ? 'px-0 text-center' : 'px-2'}`}
-            >
-                      {isSidebarOpen ? 'Fan' : 'Fan'}
-            </button>
-            <button
-              onClick={() => setUserMode('analyst')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                userMode === 'analyst'
-                  ? 'bg-pink-500/20 text-pink-200 border border-pink-500/30'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              } ${!isSidebarOpen ? 'px-0 text-center' : 'px-2'}`}
-            >
-              {isSidebarOpen ? 'Analyst' : 'Pro'}
-            </button>
-          </div>
-
           {/* User profile */}
           <button className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/8 transition-all border border-white/5 group">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 p-[2px] shadow-lg shrink-0">
@@ -177,7 +206,7 @@ function AppShell() {
               <>
                 <div className="flex-1 overflow-hidden text-left">
                   <div className="text-xs font-semibold text-white truncate">Alex Morgan</div>
-                  <div className="text-[10px] text-zinc-500 capitalize">{userMode} · Level 42</div>
+                  <div className="text-[10px] text-zinc-500 capitalize">Creator · Level 42</div>
                 </div>
                 <Settings className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
               </>
