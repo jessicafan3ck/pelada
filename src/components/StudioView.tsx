@@ -10,14 +10,18 @@
  * player/lineup pickers (need the DB), PNG/Remotion export, and the deploy/remix
  * caption + deep-link.
  */
-import { useState, useEffect, useMemo } from 'react';
-import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight, Check, Copy } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings } from '../templates/engine/resolver';
 import { supabaseResolver } from '../templates/engine/SupabaseResolver';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
+import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
+import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
 import { attributionBill } from '../attribution/model';
+
+const CREATOR_HANDLE = '@you';
 
 export default function StudioView() {
   const [template, setTemplate] = useState<Template>(SEED_TEMPLATES[0]);
@@ -53,6 +57,40 @@ export default function StudioView() {
   // (and that capability's author). Today the capabilities are 'pelada' seed
   // caps; once technicals contribute, their @handles appear here automatically.
   const bill = useMemo(() => attributionBill(template, selections), [template, selections]);
+
+  // ── Export (Phase 4 — PNG MVP) ──────────────────────────────────────────────
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<{ caption: string; link: string } | null>(null);
+  const [copied, setCopied] = useState<'caption' | 'link' | null>(null);
+
+  const remixLink = `${window.location.origin}/?view=studio&template=${template.id}`;
+  const buildCaption = () => {
+    const tag = '#' + template.id.replace(/[^a-z0-9]/gi, '');
+    return template.remix.captionTemplate
+      .replace('{{credit}}', `made with Pelada by ${CREATOR_HANDLE}`)
+      .replace('{{hashtag}}', `${tag} #PeladaU17`);
+  };
+
+  const handleExport = async () => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      const name = slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
+      await exportNodeToPng(exportRef.current, name);
+      setExportResult({ caption: buildCaption(), link: remixLink });
+    } catch (e) {
+      console.error('export failed', e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const copy = (text: string, which: 'caption' | 'link') => {
+    navigator.clipboard.writeText(text);
+    setCopied(which);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   return (
     <div className="space-y-6">
@@ -119,12 +157,41 @@ export default function StudioView() {
             </p>
           </div>
 
-          <button disabled className="w-full py-3 rounded-xl bg-white/5 border border-white/8 text-zinc-600 text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed">
-            <Download className="w-4 h-4" /> Export &amp; Deploy <span className="text-[10px] text-zinc-700">(Phase 4)</span>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full py-3 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {exporting
+              ? <><div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" /> Rendering…</>
+              : <><Download className="w-4 h-4" /> Export 9:16 PNG</>}
           </button>
           <button disabled className="w-full py-2.5 rounded-xl bg-white/5 border border-white/8 text-zinc-600 text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
-            <Sparkles className="w-3.5 h-3.5" /> Ask Co-Pilot to draft this
+            <Sparkles className="w-3.5 h-3.5" /> Ask Co-Pilot to draft this <span className="text-[10px]">(soon)</span>
           </button>
+
+          {/* Export result — the download + the caption/deep-link to deploy */}
+          {exportResult && (
+            <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
+              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved to downloads — ready to post</div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Caption</p>
+                <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
+                <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
+                  {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
+                </button>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Remix link <span className="text-zinc-600">· put in bio / link sticker</span></p>
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 text-[11px] font-mono text-cyan-400 truncate">{exportResult.link}</span>
+                  <button onClick={() => copy(exportResult.link, 'link')} className="shrink-0 text-zinc-500 hover:text-zinc-300">
+                    {copied === 'link' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Live 9:16 preview */}
@@ -159,6 +226,12 @@ export default function StudioView() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Offscreen full-resolution (1080×1920) render — what the exporter captures.
+          Kept at true size so the PNG is share-ready, not the scaled preview. */}
+      <div ref={exportRef} aria-hidden style={{ position: 'fixed', left: -99999, top: 0, width: 1080, height: 1920, pointerEvents: 'none' }}>
+        <TemplateRenderer template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={CREATOR_HANDLE} />
       </div>
     </div>
   );
