@@ -1,38 +1,45 @@
-# Pelada Render Service (Remotion → MP4)
+# Pelada Render (Remotion Lambda · pay-per-render)
 
-Turns a Pelada template spec + resolved data into a 9:16 H.264 MP4, using the
-**exact same `TemplateRenderer`** the web app uses (imported from `../src`), so
-the video is pixel-identical to the in-app preview and PNG export.
+Renders a Pelada template spec + resolved data into a 9:16 MP4 on **AWS Lambda** —
+~a few cents per video, **$0 when idle**. The composition reuses the **exact** web
+`TemplateRenderer` (imported from `../src`), so the MP4 is pixel-identical to the
+in-app preview/PNG.
 
-```
-POST /render   { template, resolved, creatorHandle }  → video/mp4 (download)
-GET  /health   → { ok: true }
-```
+Flow: browser → `/api/render` (Vercel fn, holds AWS creds) → `renderMediaOnLambda`
+→ client polls `/api/render-status` → downloads the MP4 from S3.
 
-## How it works
-- `remotion/TemplateVideo.tsx` renders each scene as a sequential `<Sequence>`
-  (its spec `durationMs`, or 3.5s for a static scene) with an 8-frame fade-in.
-- `server.ts` bundles the Remotion project once on first request, then renders
-  per request with the posted `inputProps` and streams the MP4 back.
+## One-time setup
 
-## Deploy on Render.com
-1. Push this repo. In Render: **New → Blueprint**, select the repo, and pick the
-   branch that has `render.yaml` (it lives at the **repo root** and points
-   `rootDir` at `render-service`). `standard` plan — Remotion + headless Chromium
-   will OOM on free/starter.
-2. After deploy, copy the service URL (e.g. `https://pelada-render.onrender.com`).
-3. In the web app set `VITE_RENDER_URL` to that URL (`.env.local` for dev,
-   Vercel env for prod) and redeploy/restart. The Studio **Export MP4** button
-   activates automatically when it's set.
+1. **AWS account + IAM user** with the Remotion Lambda permissions — follow
+   <https://www.remotion.dev/docs/lambda/setup> (create the role/user, get an
+   access key). Costs: only per render (Lambda + a little S3); no idle cost.
 
-### Chromium note
-`@remotion/renderer` downloads a headless Chromium on first render. On Render's
-native Node runtime you may need the system libraries Chromium requires — if the
-first render fails with a shared-library error, switch the service to Render's
-**Docker** runtime using Remotion's official base image, or add the
-[Remotion-recommended apt packages](https://www.remotion.dev/docs/miscellaneous/cloud-systems).
+2. **Deploy the function + site** (from this `render-service/` dir):
+   ```bash
+   cd render-service
+   npm install
+   export REMOTION_AWS_ACCESS_KEY_ID=...      # from step 1
+   export REMOTION_AWS_SECRET_ACCESS_KEY=...
+   npm run deploy        # deploys the Lambda function AND the site
+   ```
+   `deploy:site` prints a **Serve URL** (an S3 URL). Copy it.
 
-### Caveats
-- First request is slow (cold bundle). Renders take a few seconds; consider a
-  queue/async + signed-URL response if you see request timeouts.
-- Returns the MP4 inline (no storage). For scale, write to S3/R2 and return a URL.
+3. **Set env vars in Vercel** (Project → Settings → Environment Variables):
+   ```
+   REMOTION_AWS_ACCESS_KEY_ID      = ...
+   REMOTION_AWS_SECRET_ACCESS_KEY  = ...
+   REMOTION_FUNCTION_NAME          = remotion-render-...   (printed by deploy:fn)
+   REMOTION_SERVE_URL              = https://...amazonaws.com/.../index.html
+   REMOTION_REGION                 = us-east-1             (whatever you deployed to)
+   ```
+   Also set, for the web app: `VITE_VIDEO_ENABLED = true` (un-greys the MP4 button).
+   Redeploy.
+
+4. **Re-deploy the site whenever the templates/primitives change** (`npm run
+   deploy:site`) so the rendered video matches the latest engine.
+
+## Notes
+- `/api/render` returns **501** until `REMOTION_FUNCTION_NAME` + `REMOTION_SERVE_URL`
+  are set — the app shows the MP4 button as "(setup)".
+- Per-render cost scales with video length/resolution; a short 9:16 clip is ~$0.01–0.03.
+- Local preview of the composition: `npm run studio`.
