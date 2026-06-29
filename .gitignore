@@ -9,3 +9,6 @@ __pycache__/
 *.pyc
 render-service/.env
 render-service/.env.local
+render-service/props.json
+render-service/out.png
+render-service/out.mp4
