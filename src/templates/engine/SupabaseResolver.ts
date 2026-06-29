@@ -99,9 +99,10 @@ export class SupabaseResolver implements DataResolver {
     if (error) throw new Error(error.message);
     if (data && data.length) return data.map((r): RankEntry => ({ rank: r.rank, player_id: r.player_id, player_name: r.player_name, team: r.team, value: r.value }));
     // Fallback for any metric not precomputed into the leaderboard table.
-    const { data: ps, error: psErr } = await supabase.from(STATS).select(`player_id,player_name,team,${metric}`).order(metric, { ascending: order === 'asc' }).limit(limit);
+    // (select('*') avoids supabase-js typing a dynamic select string as a ParserError.)
+    const { data: ps, error: psErr } = await supabase.from(STATS).select('*').order(metric, { ascending: order === 'asc' }).limit(limit);
     if (psErr) throw new Error(psErr.message);
-    return (ps ?? []).map((r: Record<string, unknown>, i: number): RankEntry => ({
+    return ((ps ?? []) as Record<string, unknown>[]).map((r, i): RankEntry => ({
       rank: i + 1, player_id: r.player_id as number, player_name: r.player_name as string,
       team: r.team as string, value: Number(r[metric]),
     }));
