@@ -16,9 +16,10 @@ GET  /health   → { ok: true }
   per request with the posted `inputProps` and streams the MP4 back.
 
 ## Deploy on Render.com
-1. Push this repo. In Render: **New → Blueprint**, select the repo. It reads
-   `render.yaml` (root dir `render-service`, `standard` plan — Remotion + headless
-   Chromium will OOM on free/starter).
+1. Push this repo. In Render: **New → Blueprint**, select the repo, and pick the
+   branch that has `render.yaml` (it lives at the **repo root** and points
+   `rootDir` at `render-service`). `standard` plan — Remotion + headless Chromium
+   will OOM on free/starter.
 2. After deploy, copy the service URL (e.g. `https://pelada-render.onrender.com`).
 3. In the web app set `VITE_RENDER_URL` to that URL (`.env.local` for dev,
    Vercel env for prod) and redeploy/restart. The Studio **Export MP4** button
