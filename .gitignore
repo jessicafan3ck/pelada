@@ -7,3 +7,5 @@ dist/
 nohup.out
 __pycache__/
 *.pyc
+render-service/.env
+render-service/.env.local
