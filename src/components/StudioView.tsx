@@ -13,7 +13,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
-import type { Template, MetricBinding, TextBinding, LineupBinding } from '../templates/spec';
+import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
 import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
@@ -21,6 +21,7 @@ import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
+import PlayerPicker from './studio/PlayerPicker';
 
 const CREATOR_HANDLE = '@you';
 
@@ -78,6 +79,10 @@ export default function StudioView() {
     () => Object.entries(template.bindings).filter(([, b]) => b.kind === 'lineup') as [string, LineupBinding][],
     [template]
   );
+  const playerBindings = useMemo(
+    () => Object.entries(template.bindings).filter(([, b]) => b.kind === 'player') as [string, PlayerBinding][],
+    [template]
+  );
 
   // All U17 players for the pickers (live, with sample fallback).
   const [players, setPlayers] = useState<PlayerRecord[]>([]);
@@ -87,13 +92,18 @@ export default function StudioView() {
   // remix link already prefilled it). The creator edits slots from there.
   useEffect(() => {
     if (!players.length) return;
+    const ranked = [...players].sort((a, x) => Number(x.line_breaks ?? 0) - Number(a.line_breaks ?? 0));
     lineupBindings.forEach(([id]) => {
       const cur = selections[id] as number[] | undefined;
       if (cur && cur.some(Boolean)) return;
-      const top = [...players]
-        .sort((a, x) => Number(x.line_breaks ?? 0) - Number(a.line_breaks ?? 0))
-        .slice(0, 11).map(p => p.player_id);
-      setSelections(s => ({ ...s, [id]: top }));
+      setSelections(s => ({ ...s, [id]: ranked.slice(0, 11).map(p => p.player_id) }));
+    });
+    // Seed player bindings with DISTINCT top players (so Head-to-Head isn't A vs A).
+    const taken = new Set<number>(playerBindings.map(([id]) => selections[id] as number).filter(Boolean));
+    playerBindings.forEach(([id]) => {
+      if (selections[id]) return;
+      const pick = ranked.find(p => !taken.has(p.player_id));
+      if (pick) { taken.add(pick.player_id); setSelections(s => ({ ...s, [id]: pick.player_id })); }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, template]);
@@ -216,6 +226,17 @@ export default function StudioView() {
                 })}
               </div>
             </div>
+          ))}
+
+          {playerBindings.map(([id, b]) => (
+            <PlayerPicker
+              key={id}
+              label={b.label}
+              value={selections[id] as number | undefined}
+              onChange={v => set(id, v)}
+              players={players}
+              sortMetric={currentMetric}
+            />
           ))}
 
           {lineupBindings.map(([id, b]) => (

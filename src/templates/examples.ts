@@ -252,4 +252,49 @@ export const STAT_DROP: Template = {
   },
 };
 
-export const SEED_TEMPLATES: Template[] = [BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP];
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. HEAD-TO-HEAD — comparison format (Messi-vs-Ronaldo radar, data-backed)
+//    Two players compared across our exclusive U17 metrics on a radar.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const HEAD_TO_HEAD: Template = {
+  id: 'head-to-head',
+  version: 1,
+  meta: {
+    name: 'Head-to-Head',
+    tagline: 'Two U17 stars, one radar — settle the debate with the data.',
+    category: 'comparison',
+    authorId: 'pelada',
+  },
+  canvas: { aspect: '9:16', width: 1080, height: 1920 },
+  style: { accent: { fixed: '#22d3ee' }, background: { kind: 'mesh' }, footer: { show: true } },
+  bindings: {
+    title: { kind: 'text', label: 'Title', default: 'WHO YA GOT?', maxLength: 24 },
+    playerA: { kind: 'player', label: 'Player A' },
+    playerB: { kind: 'player', label: 'Player B' },
+    compare: {
+      kind: 'comparison',
+      label: 'Compare',
+      players: [{ fromBinding: 'playerA' }, { fromBinding: 'playerB' }],
+      metrics: ['goals', 'line_breaks', 'pressings', 'passes_complete', 'ball_progressions', 'tackles'],
+    },
+  },
+  scenes: [
+    {
+      id: 'radar',
+      durationMs: 0,
+      transition: 'fade',
+      components: [
+        { id: 'title', type: 'headline', layout: { x: 0.06, y: 0.06, w: 0.88, h: 0.08, align: 'center' }, data: { text: { binding: 'title' } } },
+        { id: 'radar', type: 'radar', layout: { x: 0.04, y: 0.18, w: 0.92, h: 0.68 }, data: { comparison: { binding: 'compare' } } },
+      ],
+    },
+  ],
+  remix: {
+    remixSlots: ['playerA', 'playerB'],
+    captionTemplate: 'U17 head-to-head 🔥 who ya got? {{credit}} {{hashtag}}',
+    publishable: true,
+  },
+};
+
+export const SEED_TEMPLATES: Template[] = [BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];

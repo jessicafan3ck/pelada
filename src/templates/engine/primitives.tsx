@@ -115,7 +115,45 @@ export function Spacer() { return <div />; }
 export function StatBar({ label, value, accent }: BaseProps & { label?: string; value?: number }) {
   return <div style={{ width: '100%' }}><div style={{ fontSize: 24, color: '#fff', marginBottom: 6 }}>{label}: {value}</div><div style={{ height: 16, background: accent, borderRadius: 8, width: `${Math.min(100, Number(value))}%` }} /></div>;
 }
-export function Radar({ accent }: BaseProps) { return <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: `2px dashed ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, fontWeight: 800 }}>RADAR</div>; }
+export function Radar({ comparison, accent }: BaseProps & { comparison?: { players: PlayerRecord[]; metrics: string[] } }) {
+  const players = (comparison?.players ?? []).slice(0, 2);
+  const metrics = comparison?.metrics ?? [];
+  const COLORS = [accent, '#fbbf24'];
+  const N = Math.max(metrics.length, 1);
+  const cx = 200, cy = 190, R = 140;
+  const ang = (i: number) => (Math.PI * 2 * i) / N - Math.PI / 2;
+  const pt = (i: number, f: number): [number, number] => [cx + Math.cos(ang(i)) * R * f, cy + Math.sin(ang(i)) * R * f];
+  const maxes = metrics.map(m => Math.max(1, ...players.map(p => Number(p[m] ?? 0))));
+
+  return (
+    <svg viewBox="0 0 400 470" width="100%" height="100%">
+      {[0.25, 0.5, 0.75, 1].map(f => (
+        <polygon key={f} points={metrics.map((_, i) => pt(i, f).join(',')).join(' ')} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      ))}
+      {metrics.map((m, i) => {
+        const [x, y] = pt(i, 1);
+        const [lx, ly] = pt(i, 1.2);
+        return (
+          <g key={m}>
+            <line x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.12)" />
+            <text x={lx} y={ly} fill="rgba(255,255,255,0.65)" fontSize="14" fontWeight="700" textAnchor="middle" dominantBaseline="middle">{METRIC_LABELS[m]?.split(' ')[0] ?? m}</text>
+          </g>
+        );
+      })}
+      {players.map((p, pi) => (
+        <polygon key={pi}
+          points={metrics.map((m, i) => pt(i, Number(p[m] ?? 0) / maxes[i]).join(',')).join(' ')}
+          fill={`${COLORS[pi]}33`} stroke={COLORS[pi]} strokeWidth="3" strokeLinejoin="round" />
+      ))}
+      {players.map((p, pi) => (
+        <g key={'lg' + pi}>
+          <circle cx={28} cy={420 + pi * 30} r={8} fill={COLORS[pi]} />
+          <text x={46} y={420 + pi * 30} fill="#fff" fontSize="22" fontWeight="800" dominantBaseline="middle">{p.player_name} <tspan fill="rgba(255,255,255,0.5)" fontSize="16">· {p.team}</tspan></text>
+        </g>
+      ))}
+    </svg>
+  );
+}
 const TIERS: { key: string; color: string; lo: number; hi: number }[] = [
   { key: 'S', color: '#ef4444', lo: 1, hi: 2 },
   { key: 'A', color: '#f59e0b', lo: 3, hi: 5 },
