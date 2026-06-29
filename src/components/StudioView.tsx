@@ -11,7 +11,7 @@
  * caption + deep-link.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight, Check, Copy } from 'lucide-react';
+import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings } from '../templates/engine/resolver';
@@ -23,14 +23,35 @@ import { attributionBill } from '../attribution/model';
 
 const CREATOR_HANDLE = '@you';
 
+// base64 <-> JSON for the remix config carried in the deep-link (?cfg=)
+const encodeCfg = (o: unknown) => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+const decodeCfg = (s: string | null): Record<string, unknown> => {
+  if (!s) return {};
+  try { return JSON.parse(decodeURIComponent(escape(atob(s)))); } catch { return {}; }
+};
+
+// Parse a remix deep-link once: which template, prefilled selections, whose remix.
+function parseRemix() {
+  const p = new URLSearchParams(window.location.search);
+  const template = SEED_TEMPLATES.find(t => t.id === p.get('template')) ?? SEED_TEMPLATES[0];
+  return { template, selections: decodeCfg(p.get('cfg')), remixOf: p.get('remixOf') || undefined };
+}
+const REMIX = parseRemix();
+
 export default function StudioView() {
-  const [template, setTemplate] = useState<Template>(SEED_TEMPLATES[0]);
-  const [selections, setSelections] = useState<Record<string, unknown>>({});
+  const [template, setTemplate] = useState<Template>(REMIX.template);
+  const [selections, setSelections] = useState<Record<string, unknown>>(REMIX.selections);
   const [resolved, setResolved] = useState<ResolvedBindings>({});
   const [sceneIndex, setSceneIndex] = useState(0);
+  const [remixOf] = useState<string | undefined>(REMIX.remixOf);
 
-  // Reset selections + scene when switching template
-  useEffect(() => { setSelections({}); setSceneIndex(0); }, [template]);
+  // Reset selections + scene when the user SWITCHES template — but keep the
+  // initial prefill from a remix deep-link on first mount.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    setSelections({}); setSceneIndex(0);
+  }, [template]);
 
   // Resolve bindings whenever template or selections change.
   // Live U17 data via Supabase; falls back to the sample fixture if a query fails.
@@ -63,8 +84,14 @@ export default function StudioView() {
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState<{ caption: string; link: string } | null>(null);
   const [copied, setCopied] = useState<'caption' | 'link' | null>(null);
+  const [platform, setPlatform] = useState<'tiktok' | 'story'>('tiktok');
 
-  const remixLink = `${window.location.origin}/?view=studio&template=${template.id}`;
+  // The remix deep-link carries the template + the creator's exact config, so a
+  // follower who taps it lands in Studio on this template, prefilled.
+  const remixLink = useMemo(
+    () => `${window.location.origin}/?view=studio&template=${template.id}&cfg=${encodeCfg(selections)}&remixOf=${encodeURIComponent(CREATOR_HANDLE)}`,
+    [template, selections]
+  );
   const buildCaption = () => {
     const tag = '#' + template.id.replace(/[^a-z0-9]/gi, '');
     return template.remix.captionTemplate
@@ -102,6 +129,16 @@ export default function StudioView() {
           <p className="text-xs text-zinc-500">Pick a template, plug in U17 data, deploy. <span className="text-green-500/70">Live FIFA U17 data.</span></p>
         </div>
       </div>
+
+      {/* Remix banner — shown when a follower arrived via someone's remix link */}
+      {remixOf && (
+        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.05] px-4 py-3 flex items-center gap-2.5 text-xs">
+          <GitBranch className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span className="text-zinc-300">
+            Remixing <span className="text-cyan-300 font-semibold">{remixOf}</span>'s <span className="text-white font-semibold">{template.meta.name}</span> — swap in your picks, then export your own. Their credit travels with it.
+          </span>
+        </div>
+      )}
 
       {/* Template gallery */}
       <div className="flex gap-3 flex-wrap">
@@ -170,19 +207,49 @@ export default function StudioView() {
             <Sparkles className="w-3.5 h-3.5" /> Ask Co-Pilot to draft this <span className="text-[10px]">(soon)</span>
           </button>
 
-          {/* Export result — the download + the caption/deep-link to deploy */}
+          {/* Export result — download done, now the per-platform deploy recipe */}
           {exportResult && (
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
               <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved to downloads — ready to post</div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Caption</p>
-                <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
-                <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
-                  {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
-                </button>
+
+              {/* platform tabs */}
+              <div className="flex gap-2">
+                {([['tiktok', 'TikTok'], ['story', 'IG Story']] as const).map(([id, label]) => (
+                  <button key={id} onClick={() => setPlatform(id)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${platform === id ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/8 text-zinc-500 hover:text-zinc-300'}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
+
+              {/* recipe */}
+              <ol className="text-[11px] text-zinc-400 space-y-1 list-decimal pl-4">
+                {platform === 'tiktok' ? (
+                  <>
+                    <li>Post the downloaded PNG (or screen-record the preview for video).</li>
+                    <li>Paste the caption below.</li>
+                    <li>Drop the remix link in your bio or a pinned comment.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Add the downloaded PNG to your Story.</li>
+                    <li>Add a <span className="text-zinc-200 font-semibold">Link sticker</span> with the remix URL below.</li>
+                  </>
+                )}
+              </ol>
+
+              {platform === 'tiktok' && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Caption</p>
+                  <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
+                  <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
+                    {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
+                  </button>
+                </div>
+              )}
+
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Remix link <span className="text-zinc-600">· put in bio / link sticker</span></p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Remix link <span className="text-zinc-600">· prefills this exact template</span></p>
                 <div className="flex items-center gap-2">
                   <span className="flex-1 text-[11px] font-mono text-cyan-400 truncate">{exportResult.link}</span>
                   <button onClick={() => copy(exportResult.link, 'link')} className="shrink-0 text-zinc-500 hover:text-zinc-300">

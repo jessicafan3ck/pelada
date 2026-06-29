@@ -135,7 +135,7 @@ export const WONDERKID_COUNTDOWN: Template = {
         props: { rank },
         // index into the resolved leaderboard list: #5 = index 4 ... #1 = index 0
         data: {
-          player: { binding: 'ranking', index: 5 - rank },
+          player: { binding: 'ranking', index: rank - 1 },
           metric: { binding: 'metric' },
         },
         anim: { style: 'count-up', delayMs: 200 },
