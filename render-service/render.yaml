@@ -1,0 +1,15 @@
+# Render.com blueprint for the Pelada MP4 render service.
+# In Render: New → Blueprint → point at this repo; root dir = render-service.
+services:
+  - type: web
+    name: pelada-render
+    runtime: node
+    plan: standard          # Remotion + headless Chromium needs RAM/CPU (free/starter will OOM)
+    region: oregon
+    rootDir: render-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

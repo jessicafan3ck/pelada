@@ -11,7 +11,7 @@
  * caption + deep-link.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Boxes, Download, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch } from 'lucide-react';
+import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
@@ -19,6 +19,7 @@ import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolv
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
+import { exportMp4, isVideoExportAvailable } from '../templates/engine/exportVideo';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
@@ -123,6 +124,7 @@ export default function StudioView() {
   // ── Export (Phase 4 — PNG MVP) ──────────────────────────────────────────────
   const exportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingMp4, setExportingMp4] = useState(false);
   const [exportResult, setExportResult] = useState<{ caption: string; link: string } | null>(null);
   const [copied, setCopied] = useState<'caption' | 'link' | null>(null);
   const [platform, setPlatform] = useState<'tiktok' | 'story'>('tiktok');
@@ -151,6 +153,19 @@ export default function StudioView() {
       console.error('export failed', e);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportMp4 = async () => {
+    setExportingMp4(true);
+    try {
+      const name = slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
+      await exportMp4({ template, resolved, creatorHandle: CREATOR_HANDLE }, name);
+      setExportResult({ caption: buildCaption(), link: remixLink });
+    } catch (e) {
+      console.error('mp4 export failed', e);
+    } finally {
+      setExportingMp4(false);
     }
   };
 
@@ -252,15 +267,27 @@ export default function StudioView() {
             </div>
           ))}
 
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="w-full py-3 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {exporting
-              ? <><div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" /> Rendering…</>
-              : <><Download className="w-4 h-4" /> Export 9:16 PNG</>}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              disabled={exporting || exportingMp4}
+              className="flex-1 py-3 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {exporting
+                ? <><div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" /> Rendering…</>
+                : <><Download className="w-4 h-4" /> PNG</>}
+            </button>
+            <button
+              onClick={handleExportMp4}
+              disabled={exportingMp4 || exporting || !isVideoExportAvailable()}
+              title={isVideoExportAvailable() ? 'Render an animated MP4' : 'Set VITE_RENDER_URL to enable MP4 export'}
+              className="flex-1 py-3 rounded-xl bg-pink-500/15 border border-pink-500/40 text-pink-300 hover:bg-pink-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {exportingMp4
+                ? <><div className="w-4 h-4 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" /> Rendering…</>
+                : <><Film className="w-4 h-4" /> MP4{!isVideoExportAvailable() && <span className="text-[10px] opacity-70">(setup)</span>}</>}
+            </button>
+          </div>
           <button disabled className="w-full py-2.5 rounded-xl bg-white/5 border border-white/8 text-zinc-600 text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
             <Sparkles className="w-3.5 h-3.5" /> Ask Co-Pilot to draft this <span className="text-[10px]">(soon)</span>
           </button>
