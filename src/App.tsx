@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Home, Box, Boxes, Settings, Bell, Menu,
   Globe, Calendar, MessageSquare, Users2, GitBranch,
-  Layers, Target, Network, Cpu, Database, Palette, Wrench, LineChart,
+  Layers, Target, Network, Cpu, Database, Palette, LineChart,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import StudioView from './components/StudioView';
@@ -26,12 +26,13 @@ type ViewType =
   | 'calendar' | 'lineup' | 'community' | 'similarity'
   | 'capabilities' | 'tactics' | 'networks' | 'models' | 'history';
 
-// The three on-platform role surfaces. Viewers are off-platform (not a workspace).
-type Workspace = 'Create' | 'Build' | 'Analyze';
+// Two on-platform surfaces: Creative (social content) vs Technical (analytics +
+// capabilities). Underneath, Technical sub-groups into Build (contribute) and
+// Analyze (pro). Viewers are off-platform (not a workspace).
+type Workspace = 'Creative' | 'Technical';
 const WORKSPACES: { id: Workspace; label: string; icon: typeof Palette; blurb: string }[] = [
-  { id: 'Create',  label: 'Create',  icon: Palette,   blurb: 'Make & deploy artifacts' },
-  { id: 'Build',   label: 'Build',   icon: Wrench,    blurb: 'Contribute capabilities' },
-  { id: 'Analyze', label: 'Analyze', icon: LineChart, blurb: 'Pro analysis (AI Pro)' },
+  { id: 'Creative',  label: 'Creative',  icon: Palette,   blurb: 'Make & deploy social artifacts' },
+  { id: 'Technical', label: 'Technical', icon: LineChart, blurb: 'Analytics & capabilities' },
 ];
 
 // Per-category accent colours — full static strings so Tailwind JIT includes them
@@ -45,9 +46,9 @@ const CATEGORY_ACCENT = {
 
 const INITIAL_VIEW = (new URLSearchParams(window.location.search).get('view') as ViewType) || 'dashboard';
 const VIEW_WORKSPACE: Partial<Record<ViewType, Workspace>> = {
-  capabilities: 'Build', tactics: 'Analyze', networks: 'Analyze', models: 'Analyze', history: 'Analyze',
+  capabilities: 'Technical', widgets: 'Technical', tactics: 'Technical', networks: 'Technical', models: 'Technical', history: 'Technical',
 };
-const INITIAL_WORKSPACE: Workspace = VIEW_WORKSPACE[INITIAL_VIEW] ?? 'Create';
+const INITIAL_WORKSPACE: Workspace = VIEW_WORKSPACE[INITIAL_VIEW] ?? 'Creative';
 
 function AppShell() {
   const [currentView, setCurrentView] = useState<ViewType>(INITIAL_VIEW);
@@ -56,26 +57,26 @@ function AppShell() {
   const { copilotQuery } = useAppContext();
 
   useEffect(() => {
-    if (copilotQuery) { setWorkspace('Create'); setCurrentView('copilot'); }
+    if (copilotQuery) { setWorkspace('Creative'); setCurrentView('copilot'); }
   }, [copilotQuery]);
 
   const allNavItems = [
-    // Create workspace
-    { id: 'dashboard' as ViewType,  name: 'Discover',       icon: Home,          category: 'General', workspace: 'Create' as Workspace },
-    { id: 'copilot' as ViewType,    name: 'Co-Pilot',       icon: MessageSquare, category: 'General', workspace: 'Create' as Workspace },
-    { id: 'studio' as ViewType,     name: 'Studio',         icon: Boxes,         category: 'Create',  workspace: 'Create' as Workspace },
-    { id: 'community' as ViewType,  name: 'Community',       icon: Globe,         category: 'Create',  workspace: 'Create' as Workspace },
-    { id: 'lineup' as ViewType,     name: 'Lineup',         icon: Users2,        category: 'Explore', workspace: 'Create' as Workspace },
-    { id: 'similarity' as ViewType, name: 'Scout',          icon: GitBranch,     category: 'Explore', workspace: 'Create' as Workspace },
-    { id: 'calendar' as ViewType,   name: 'Match Calendar', icon: Calendar,      category: 'Explore', workspace: 'Create' as Workspace },
-    // Build workspace (Technical)
-    { id: 'capabilities' as ViewType, name: 'Capabilities', icon: Layers,        category: 'Build',   workspace: 'Build' as Workspace },
-    { id: 'widgets' as ViewType,      name: 'Widget Lab',   icon: Box,           category: 'Build',   workspace: 'Build' as Workspace },
-    // Analyze workspace (the existing AI Pro suite)
-    { id: 'tactics' as ViewType,    name: 'Tactics Lab',    icon: Target,        category: 'Analyze', workspace: 'Analyze' as Workspace },
-    { id: 'networks' as ViewType,   name: 'Networks',       icon: Network,       category: 'Analyze', workspace: 'Analyze' as Workspace },
-    { id: 'models' as ViewType,     name: 'Model Sandbox',  icon: Cpu,           category: 'Analyze', workspace: 'Analyze' as Workspace },
-    { id: 'history' as ViewType,    name: 'Historical Data',icon: Database,      category: 'Analyze', workspace: 'Analyze' as Workspace },
+    // Creative surface (social content)
+    { id: 'dashboard' as ViewType,  name: 'Discover',       icon: Home,          category: 'General', workspace: 'Creative' as Workspace },
+    { id: 'copilot' as ViewType,    name: 'Co-Pilot',       icon: MessageSquare, category: 'General', workspace: 'Creative' as Workspace },
+    { id: 'studio' as ViewType,     name: 'Studio',         icon: Boxes,         category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'community' as ViewType,  name: 'Community',       icon: Globe,         category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'lineup' as ViewType,     name: 'Lineup',         icon: Users2,        category: 'Explore', workspace: 'Creative' as Workspace },
+    { id: 'similarity' as ViewType, name: 'Scout',          icon: GitBranch,     category: 'Explore', workspace: 'Creative' as Workspace },
+    { id: 'calendar' as ViewType,   name: 'Match Calendar', icon: Calendar,      category: 'Explore', workspace: 'Creative' as Workspace },
+    // Technical surface — Build sub-group (contribute capabilities)
+    { id: 'capabilities' as ViewType, name: 'Capabilities', icon: Layers,        category: 'Build',   workspace: 'Technical' as Workspace },
+    { id: 'widgets' as ViewType,      name: 'Widget Lab',   icon: Box,           category: 'Build',   workspace: 'Technical' as Workspace },
+    // Technical surface — Analyze sub-group (the existing AI Pro suite)
+    { id: 'tactics' as ViewType,    name: 'Tactics Lab',    icon: Target,        category: 'Analyze', workspace: 'Technical' as Workspace },
+    { id: 'networks' as ViewType,   name: 'Networks',       icon: Network,       category: 'Analyze', workspace: 'Technical' as Workspace },
+    { id: 'models' as ViewType,     name: 'Model Sandbox',  icon: Cpu,           category: 'Analyze', workspace: 'Technical' as Workspace },
+    { id: 'history' as ViewType,    name: 'Historical Data',icon: Database,      category: 'Analyze', workspace: 'Technical' as Workspace },
   ];
 
   const switchWorkspace = (ws: Workspace) => {
