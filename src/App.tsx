@@ -161,7 +161,7 @@ function AppShell() {
         </div>
 
         {/* Nav */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-6" style={{ paddingTop: 48, paddingBottom: 24 }}>
+        <div className="flex-1 overflow-y-auto px-3 space-y-6" style={{ paddingTop: 32, paddingBottom: 24 }}>
           {categories.map(category => {
             const accent = CATEGORY_ACCENT[category as keyof typeof CATEGORY_ACCENT] ?? CATEGORY_ACCENT.General;
             return (
