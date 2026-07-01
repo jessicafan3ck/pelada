@@ -137,8 +137,8 @@ function AppShell() {
           </div>
         </div>
 
-        {/* Workspace switcher — the three on-platform role surfaces */}
-        <div className="px-3 pt-4 shrink-0">
+        {/* Workspace switcher — Creative vs Technical */}
+        <div className="px-3 pt-4 pb-8 shrink-0">
           <div className={`flex bg-white/5 rounded-xl p-1 border border-white/8 ${!isSidebarOpen ? 'flex-col gap-1' : 'gap-0.5'}`}>
             {WORKSPACES.map(ws => {
               const Icon = ws.icon;
