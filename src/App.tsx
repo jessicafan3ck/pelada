@@ -64,13 +64,13 @@ function AppShell() {
     { id: 'dashboard' as ViewType,  name: 'Discover',       icon: Home,          category: 'General', workspace: 'Create' as Workspace },
     { id: 'copilot' as ViewType,    name: 'Co-Pilot',       icon: MessageSquare, category: 'General', workspace: 'Create' as Workspace },
     { id: 'studio' as ViewType,     name: 'Studio',         icon: Boxes,         category: 'Create',  workspace: 'Create' as Workspace },
-    { id: 'widgets' as ViewType,    name: 'Widget Builder', icon: Box,           category: 'Create',  workspace: 'Create' as Workspace },
     { id: 'community' as ViewType,  name: 'Community',       icon: Globe,         category: 'Create',  workspace: 'Create' as Workspace },
     { id: 'lineup' as ViewType,     name: 'Lineup',         icon: Users2,        category: 'Explore', workspace: 'Create' as Workspace },
     { id: 'similarity' as ViewType, name: 'Scout',          icon: GitBranch,     category: 'Explore', workspace: 'Create' as Workspace },
     { id: 'calendar' as ViewType,   name: 'Match Calendar', icon: Calendar,      category: 'Explore', workspace: 'Create' as Workspace },
     // Build workspace (Technical)
     { id: 'capabilities' as ViewType, name: 'Capabilities', icon: Layers,        category: 'Build',   workspace: 'Build' as Workspace },
+    { id: 'widgets' as ViewType,      name: 'Widget Lab',   icon: Box,           category: 'Build',   workspace: 'Build' as Workspace },
     // Analyze workspace (the existing AI Pro suite)
     { id: 'tactics' as ViewType,    name: 'Tactics Lab',    icon: Target,        category: 'Analyze', workspace: 'Analyze' as Workspace },
     { id: 'networks' as ViewType,   name: 'Networks',       icon: Network,       category: 'Analyze', workspace: 'Analyze' as Workspace },
