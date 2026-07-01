@@ -138,7 +138,7 @@ function AppShell() {
         </div>
 
         {/* Workspace switcher — Creative vs Technical */}
-        <div className="px-3 pt-4 pb-8 shrink-0">
+        <div className="px-3 pt-4 shrink-0">
           <div className={`flex bg-white/5 rounded-xl p-1 border border-white/8 ${!isSidebarOpen ? 'flex-col gap-1' : 'gap-0.5'}`}>
             {WORKSPACES.map(ws => {
               const Icon = ws.icon;
@@ -161,7 +161,7 @@ function AppShell() {
         </div>
 
         {/* Nav */}
-        <div className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
+        <div className="flex-1 overflow-y-auto px-3 space-y-6" style={{ paddingTop: 48, paddingBottom: 24 }}>
           {categories.map(category => {
             const accent = CATEGORY_ACCENT[category as keyof typeof CATEGORY_ACCENT] ?? CATEGORY_ACCENT.General;
             return (
