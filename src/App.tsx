@@ -46,7 +46,7 @@ const CATEGORY_ACCENT = {
   Analyze: { grad: 'from-pink-500/20 to-rose-700/5',     icon: 'text-pink-400',   dot: 'bg-pink-400',   dotGlow: 'shadow-[0_0_8px_rgba(244,114,182,0.8)]',  label: 'text-pink-600'   },
 } as const;
 
-const INITIAL_VIEW = (new URLSearchParams(window.location.search).get('view') as ViewType) || 'dashboard';
+const INITIAL_VIEW = (new URLSearchParams(window.location.search).get('view') as ViewType) || 'studio';
 const VIEW_WORKSPACE: Partial<Record<ViewType, Workspace>> = {
   capabilities: 'Technical', widgets: 'Technical', tactics: 'Technical', networks: 'Technical', models: 'Technical', history: 'Technical',
 };
@@ -62,25 +62,20 @@ function AppShell() {
     if (copilotQuery) { setWorkspace('Creative'); setCurrentView('copilot'); }
   }, [copilotQuery]);
 
+  // ── STRIPPED to the fan-engagement surface (the 3 objectives) ──────────────
+  // Create & Post → Studio, Choose My XI · On-platform hooks → Leaderboard.
+  // (Remix is a flow INTO Studio via a deep-link, not its own nav item.)
+  //
+  // The full analyst/technical suite is intentionally hidden from the sidebar
+  // but NOT deleted — every component + render case below still exists and is
+  // reachable by URL (e.g. ?view=capabilities, ?view=tactics, ?view=networks,
+  // ?view=models, ?view=history, ?view=widgets, ?view=copilot, ?view=lineup,
+  // ?view=similarity, ?view=calendar, ?view=community, ?view=dashboard) for
+  // when we revisit. To restore one to the sidebar, add it back to this array.
   const allNavItems = [
-    // Creative surface (social content)
-    { id: 'dashboard' as ViewType,  name: 'Discover',       icon: Home,          category: 'General', workspace: 'Creative' as Workspace },
-    { id: 'copilot' as ViewType,    name: 'Co-Pilot',       icon: MessageSquare, category: 'General', workspace: 'Creative' as Workspace },
-    { id: 'studio' as ViewType,     name: 'Studio',         icon: Boxes,         category: 'Create',  workspace: 'Creative' as Workspace },
-    { id: 'play' as ViewType,       name: 'Choose My XI',   icon: Play,          category: 'Create',  workspace: 'Creative' as Workspace },
-    { id: 'community' as ViewType,  name: 'Community',       icon: Globe,         category: 'Create',  workspace: 'Creative' as Workspace },
-    { id: 'leaderboard' as ViewType, name: 'Leaderboard',    icon: Trophy,        category: 'Create',  workspace: 'Creative' as Workspace },
-    { id: 'lineup' as ViewType,     name: 'Lineup',         icon: Users2,        category: 'Explore', workspace: 'Creative' as Workspace },
-    { id: 'similarity' as ViewType, name: 'Scout',          icon: GitBranch,     category: 'Explore', workspace: 'Creative' as Workspace },
-    { id: 'calendar' as ViewType,   name: 'Match Calendar', icon: Calendar,      category: 'Explore', workspace: 'Creative' as Workspace },
-    // Technical surface — Build sub-group (contribute capabilities)
-    { id: 'capabilities' as ViewType, name: 'Capabilities', icon: Layers,        category: 'Build',   workspace: 'Technical' as Workspace },
-    { id: 'widgets' as ViewType,      name: 'Widget Lab',   icon: Box,           category: 'Build',   workspace: 'Technical' as Workspace },
-    // Technical surface — Analyze sub-group (the existing AI Pro suite)
-    { id: 'tactics' as ViewType,    name: 'Tactics Lab',    icon: Target,        category: 'Analyze', workspace: 'Technical' as Workspace },
-    { id: 'networks' as ViewType,   name: 'Networks',       icon: Network,       category: 'Analyze', workspace: 'Technical' as Workspace },
-    { id: 'models' as ViewType,     name: 'Model Sandbox',  icon: Cpu,           category: 'Analyze', workspace: 'Technical' as Workspace },
-    { id: 'history' as ViewType,    name: 'Historical Data',icon: Database,      category: 'Analyze', workspace: 'Technical' as Workspace },
+    { id: 'studio' as ViewType,      name: 'Studio',       icon: Boxes,  category: 'Create', workspace: 'Creative' as Workspace },
+    { id: 'play' as ViewType,        name: 'Choose My XI', icon: Play,   category: 'Create', workspace: 'Creative' as Workspace },
+    { id: 'leaderboard' as ViewType, name: 'Leaderboard',  icon: Trophy, category: 'Create', workspace: 'Creative' as Workspace },
   ];
 
   const switchWorkspace = (ws: Workspace) => {
@@ -143,28 +138,9 @@ function AppShell() {
           </div>
         </div>
 
-        {/* Workspace switcher — Creative vs Technical */}
-        <div className="px-3 pt-4 shrink-0">
-          <div className={`flex bg-white/5 rounded-xl p-1 border border-white/8 ${!isSidebarOpen ? 'flex-col gap-1' : 'gap-0.5'}`}>
-            {WORKSPACES.map(ws => {
-              const Icon = ws.icon;
-              const active = workspace === ws.id;
-              return (
-                <button
-                  key={ws.id}
-                  onClick={() => switchWorkspace(ws.id)}
-                  title={ws.blurb}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                    active ? 'bg-white/10 text-white border border-white/10 shadow-[0_0_12px_rgba(255,255,255,0.06)]' : 'text-zinc-500 hover:text-zinc-300'
-                  } ${!isSidebarOpen ? 'px-0' : 'px-1'}`}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  {isSidebarOpen && <span>{ws.label}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Workspace switcher hidden — the app is stripped to the fan-engagement
+            surface (single Creative surface). Restore WORKSPACES.map here if the
+            Technical suite returns to the sidebar. */}
 
         {/* Nav */}
         <div className="flex-1 overflow-y-auto px-3 space-y-6" style={{ paddingTop: 32, paddingBottom: 24 }}>
