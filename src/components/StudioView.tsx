@@ -11,7 +11,7 @@
  * caption + deep-link.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck } from 'lucide-react';
+import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck, ExternalLink } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
@@ -343,8 +343,8 @@ export default function StudioView() {
               className="flex-1 py-3 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {exporting
-                ? <><div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" /> Rendering…</>
-                : <><Download className="w-4 h-4" /> PNG</>}
+                ? <><div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" /> Saving…</>
+                : <><Download className="w-4 h-4" /> Save Photo</>}
             </button>
             <button
               onClick={handleExportMp4}
@@ -360,7 +360,7 @@ export default function StudioView() {
           {/* Export result — download done, now the per-platform deploy recipe */}
           {exportResult && (
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
-              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved to downloads — ready to post</div>
+              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Photo saved — ready for TikTok</div>
 
               {/* platform tabs */}
               <div className="flex gap-2">
@@ -376,9 +376,9 @@ export default function StudioView() {
               <ol className="text-[11px] text-zinc-400 space-y-1 list-decimal pl-4">
                 {platform === 'tiktok' ? (
                   <>
-                    <li>Post the downloaded PNG (or screen-record the preview for video).</li>
-                    <li>Paste the caption below.</li>
-                    <li>Drop the remix link in your bio or a pinned comment.</li>
+                    <li>Open TikTok → <span className="text-zinc-200 font-semibold">＋</span> → <span className="text-zinc-200 font-semibold">Upload</span> and pick this card from your Camera Roll.</li>
+                    <li>Tap <span className="text-zinc-200 font-semibold">Save as draft</span> — it's ready to post anytime.</li>
+                    <li>Paste the caption; drop the remix link in a pinned comment.</li>
                   </>
                 ) : (
                   <>
@@ -394,6 +394,12 @@ export default function StudioView() {
                   <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
                   <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
                     {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
+                  </button>
+                  <button
+                    onClick={() => window.open('https://www.tiktok.com/upload', '_blank')}
+                    className="mt-2 w-full py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Open TikTok
                   </button>
                 </div>
               )}
