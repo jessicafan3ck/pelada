@@ -21,9 +21,16 @@ import {
  *  query fails (e.g. before the publishable key is set). */
 export async function getPlayers(): Promise<PlayerRecord[]> {
   try {
-    const { data, error } = await supabase.from('u17wwc_player_stats').select('*').order('player_name');
-    if (error) throw new Error(error.message);
-    return (data && data.length ? data : SAMPLE_PLAYERS) as PlayerRecord[];
+    // Race the query against a timeout so an unreachable/misconfigured Supabase
+    // (offline, no publishable key) falls back to the sample pool instead of
+    // leaving every picker dead-empty forever.
+    const query = (async () => {
+      const { data, error } = await supabase.from('u17wwc_player_stats').select('*').order('player_name');
+      if (error) throw new Error(error.message);
+      return (data && data.length ? data : SAMPLE_PLAYERS) as PlayerRecord[];
+    })();
+    const timeout = new Promise<PlayerRecord[]>((_, reject) => setTimeout(() => reject(new Error('getPlayers timeout')), 3500));
+    return await Promise.race([query, timeout]);
   } catch {
     return SAMPLE_PLAYERS;
   }

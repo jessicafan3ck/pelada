@@ -10,6 +10,7 @@ import React from 'react';
 import type { Template, ComponentSpec, ColorRef } from '../spec';
 import { PRIMITIVES } from './primitives';
 import { resolveRef, type ResolvedBindings } from './resolver';
+import { SponsorLockup, ClaimsDisclaimer } from './branding';
 
 interface Props {
   template: Template;
@@ -60,8 +61,16 @@ export function TemplateRenderer({ template, resolved, sceneIndex = 0, creatorHa
         );
       })}
 
+      {/* locked sponsor co-brand — non-deletable, rides every share + remix */}
+      <div style={{ position: 'absolute', top: 40, right: 40 }}>
+        <SponsorLockup h={40} />
+      </div>
+
       {/* locked Pelada footer */}
       {template.style.footer.show && <PeladaFooter accent={accent} handle={creatorHandle} />}
+
+      {/* locked claims disclaimer — baked in, non-deletable, brand-safety guarantee */}
+      <ClaimsDisclaimer />
     </div>
   );
 }
@@ -77,7 +86,7 @@ function MeshBackground({ accent }: { accent: string }) {
 
 function PeladaFooter({ accent, handle }: { accent: string; handle?: string }) {
   return (
-    <div style={{ position: 'absolute', bottom: 36, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+    <div style={{ position: 'absolute', bottom: 72, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
       <svg viewBox="0 0 32 32" width={40} height={40} aria-hidden>
         <rect width="32" height="32" rx="8" fill="#000" />
         <polyline points="4,9 9,15 16,9 23,15 28,9" stroke="#F59E0B" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" fill="none" />

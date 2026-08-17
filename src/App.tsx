@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import {
   Home, Box, Boxes, Settings, Bell, Menu,
   Globe, Calendar, MessageSquare, Users2, GitBranch,
-  Layers, Target, Network, Cpu, Database, Palette, LineChart,
+  Layers, Target, Network, Cpu, Database, Palette, LineChart, Play, Trophy,
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import StudioView from './components/StudioView';
+import PlayModeXI from './components/PlayModeXI';
 import WidgetBuilder from './components/WidgetBuilder';
 import CalendarView from './components/CalendarView';
 import PeladaAgent from './components/PeladaAgent';
 import LineupView from './components/LineupView';
 import ContextPanel from './components/ContextPanel';
 import CommunityLibrary from './components/CommunityLibrary';
+import FifaLeaderboard from './components/FifaLeaderboard';
 import PlayerSimilarity from './components/visualizations/PlayerSimilarity';
 import CapabilitiesView from './components/CapabilitiesView';
 import TacticsView from './components/TacticsView';
@@ -22,8 +24,8 @@ import { DataContextProvider } from './context/DataContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
 
 type ViewType =
-  | 'dashboard' | 'copilot' | 'studio' | 'widgets'
-  | 'calendar' | 'lineup' | 'community' | 'similarity'
+  | 'dashboard' | 'copilot' | 'studio' | 'play' | 'widgets'
+  | 'calendar' | 'lineup' | 'community' | 'similarity' | 'leaderboard'
   | 'capabilities' | 'tactics' | 'networks' | 'models' | 'history';
 
 // Two on-platform surfaces: Creative (social content) vs Technical (analytics +
@@ -65,7 +67,9 @@ function AppShell() {
     { id: 'dashboard' as ViewType,  name: 'Discover',       icon: Home,          category: 'General', workspace: 'Creative' as Workspace },
     { id: 'copilot' as ViewType,    name: 'Co-Pilot',       icon: MessageSquare, category: 'General', workspace: 'Creative' as Workspace },
     { id: 'studio' as ViewType,     name: 'Studio',         icon: Boxes,         category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'play' as ViewType,       name: 'Choose My XI',   icon: Play,          category: 'Create',  workspace: 'Creative' as Workspace },
     { id: 'community' as ViewType,  name: 'Community',       icon: Globe,         category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'leaderboard' as ViewType, name: 'Leaderboard',    icon: Trophy,        category: 'Create',  workspace: 'Creative' as Workspace },
     { id: 'lineup' as ViewType,     name: 'Lineup',         icon: Users2,        category: 'Explore', workspace: 'Creative' as Workspace },
     { id: 'similarity' as ViewType, name: 'Scout',          icon: GitBranch,     category: 'Explore', workspace: 'Creative' as Workspace },
     { id: 'calendar' as ViewType,   name: 'Match Calendar', icon: Calendar,      category: 'Explore', workspace: 'Creative' as Workspace },
@@ -93,9 +97,11 @@ function AppShell() {
       case 'dashboard':   return <Dashboard onOpenAgent={() => setCurrentView('copilot')} onNavigate={v => setCurrentView(v as ViewType)} />;
       case 'copilot':     return <PeladaAgent onNavigate={(v) => setCurrentView(v as ViewType)} currentView={currentView} isOpen={true} onOpenChange={() => {}} fullPage />;
       case 'studio':      return <StudioView />;
+      case 'play':        return <PlayModeXI />;
       case 'lineup':      return <LineupView />;
       case 'similarity':  return <PlayerSimilarity />;
       case 'community':   return <CommunityLibrary />;
+      case 'leaderboard': return <FifaLeaderboard />;
       case 'widgets':     return <WidgetBuilder />;
       case 'calendar':    return <CalendarView />;
       case 'capabilities':return <CapabilitiesView />;
