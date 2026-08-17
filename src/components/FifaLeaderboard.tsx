@@ -62,12 +62,14 @@ function StatPill({ icon: Icon, value, label }: { icon: typeof Heart; value: num
   );
 }
 
-export default function FifaLeaderboard() {
+/** The board itself (FIFA account header + ribbon + rows) — embeddable on the
+ *  Dashboard landing page as well as the standalone Leaderboard view. */
+export function LeaderboardBoard() {
   const totalReach = SEED.reduce((s, r) => s + r.reach, 0);
   const totalRemix = SEED.reduce((s, r) => s + r.remixes, 0);
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       {/* FIFA TikTok account header */}
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-transparent p-5">
         <div className="flex items-center gap-4">
@@ -85,15 +87,6 @@ export default function FifaLeaderboard() {
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-[11px] font-bold text-red-300 uppercase tracking-widest">Live</span>
           </div>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20"><Trophy className="w-5 h-5 text-yellow-400" /></div>
-        <div>
-          <h1 className="text-xl font-black text-white">Creator Leaderboard</h1>
-          <p className="text-xs text-zinc-500">Fan-made cards ranked by the engagement they drive on TikTok — every one carrying <span className="text-red-400/80 font-semibold">Lenovo</span> + <span className="text-white/70 font-semibold">FIFA</span>.</p>
         </div>
       </div>
 
@@ -141,6 +134,22 @@ export default function FifaLeaderboard() {
       <p className="text-[11px] text-zinc-600 leading-relaxed">
         Every card is a fan's opinion, built on FIFA match data — and a Lenovo + FIFA billboard that travels through each remix. The leaderboard turns one-off posts into a recurring, measurable reach engine.
       </p>
+    </div>
+  );
+}
+
+/** Standalone Leaderboard view (?view=leaderboard). */
+export default function FifaLeaderboard() {
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20"><Trophy className="w-5 h-5 text-yellow-400" /></div>
+        <div>
+          <h1 className="text-xl font-black text-white">Creator Leaderboard</h1>
+          <p className="text-xs text-zinc-500">Fan-made cards ranked by the engagement they drive on TikTok — every one carrying <span className="text-red-400/80 font-semibold">Lenovo</span> + <span className="text-white/70 font-semibold">FIFA</span>.</p>
+        </div>
+      </div>
+      <LeaderboardBoard />
     </div>
   );
 }

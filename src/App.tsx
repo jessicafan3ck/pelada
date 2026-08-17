@@ -46,7 +46,7 @@ const CATEGORY_ACCENT = {
   Analyze: { grad: 'from-pink-500/20 to-rose-700/5',     icon: 'text-pink-400',   dot: 'bg-pink-400',   dotGlow: 'shadow-[0_0_8px_rgba(244,114,182,0.8)]',  label: 'text-pink-600'   },
 } as const;
 
-const INITIAL_VIEW = (new URLSearchParams(window.location.search).get('view') as ViewType) || 'studio';
+const INITIAL_VIEW = (new URLSearchParams(window.location.search).get('view') as ViewType) || 'dashboard';
 const VIEW_WORKSPACE: Partial<Record<ViewType, Workspace>> = {
   capabilities: 'Technical', widgets: 'Technical', tactics: 'Technical', networks: 'Technical', models: 'Technical', history: 'Technical',
 };
@@ -73,9 +73,10 @@ function AppShell() {
   // ?view=similarity, ?view=calendar, ?view=community, ?view=dashboard) for
   // when we revisit. To restore one to the sidebar, add it back to this array.
   const allNavItems = [
-    { id: 'studio' as ViewType,      name: 'Studio',       icon: Boxes,  category: 'Create', workspace: 'Creative' as Workspace },
-    { id: 'play' as ViewType,        name: 'Choose My XI', icon: Play,   category: 'Create', workspace: 'Creative' as Workspace },
-    { id: 'leaderboard' as ViewType, name: 'Leaderboard',  icon: Trophy, category: 'Create', workspace: 'Creative' as Workspace },
+    { id: 'dashboard' as ViewType,   name: 'Discover',     icon: Home,   category: 'General', workspace: 'Creative' as Workspace },
+    { id: 'studio' as ViewType,      name: 'Studio',       icon: Boxes,  category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'play' as ViewType,        name: 'Choose My XI', icon: Play,   category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'leaderboard' as ViewType, name: 'Leaderboard',  icon: Trophy, category: 'Create',  workspace: 'Creative' as Workspace },
   ];
 
   const switchWorkspace = (ws: Workspace) => {
