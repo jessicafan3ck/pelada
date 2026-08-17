@@ -22,13 +22,18 @@ export type DraftResult =
 
 // The card can only ever state what the data proves. These are the asks we
 // refuse before we even call the model — the structural "脱敏" guarantee.
+// NOTE on scope: a fan's OWN selection — "best XI", "dream team", "my tier
+// list", "my ranking" — is allowed. It's explicitly their opinion (the locked
+// disclaimer already says so), and it's the core of the product. We only refuse
+// an OBJECTIVE verdict crowning a specific player, a prediction, or an off-pitch
+// / disparaging claim. So "best XI" passes; "best player ever" does not.
 const OUT_OF_BOUNDS: { re: RegExp; why: string }[] = [
-  { re: /\b(goat|greatest (of all time|ever)|best (ever|player )?(in the world|of all time|ever)?|better than|worse than|overrated|underrated|worst)\b/i,
-    why: 'crown a "best ever" or rank one player above another as a verdict' },
-  { re: /\b(will win|gonna win|going to win|who wins|predict|prediction|future (star|goat)|will (she|he|they) be|next messi|next ronaldo)\b/i,
+  { re: /\b(goat|greatest ever|greatest of all time|greatest (player|footballer)|best (player|footballer)( ever| of all time| in the world| alive)?|best (ever|of all time|in the world|alive) (player|footballer)|single best player|better than|more talented than)\b/i,
+    why: 'crown one specific player as the objective best/greatest, or rank a named player above another as fact — but I can build YOUR pick (a best XI, tier list, or ranking) and back each choice with the data' },
+  { re: /\b(will win|gonna win|going to win|who wins|who will win|predict|prediction|future (star|goat)|will (she|he|they) be the|next messi|next ronaldo)\b/i,
     why: 'predict what will happen' },
-  { re: /\b(prettier|hotter|boyfriend|girlfriend|dating|religion|nationality is better|hate|trash|sucks|flop)\b/i,
-    why: 'make an off-pitch or personal claim about a player' },
+  { re: /\b(prettier|hotter|boyfriend|girlfriend|dating|religion|hate|trash|sucks|flop|worst player|overrated|underrated)\b/i,
+    why: 'make an off-pitch, negative, or personal claim about a player' },
 ];
 
 /** Local guardrail. Returns a friendly refusal string, or null if the ask is fine. */

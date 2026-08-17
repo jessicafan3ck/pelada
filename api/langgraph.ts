@@ -142,13 +142,14 @@ ${plr}
 - Pick the metric that best matches the fan's intent from the approved list. If they name an unapproved or vague stat, choose the closest approved one.
 - title: a SHORT, NEUTRAL hook (max 24 chars). Describe the topic, never a verdict. Good: "TOP 5 WONDERKIDS". Banned: "BEST EVER", "GREATEST", "WILL WIN".
 
-## What you MUST refuse (set can_fulfill=false, give a friendly refusal_reason)
-The platform can only state what the data proves. Refuse and reframe if the fan asks you to:
-- claim a superlative as fact ("the greatest of all time", "better than Messi", "the best player in the world")
+## Allowed vs refused — read carefully
+A fan's OWN selection is ALLOWED and encouraged: "build my best XI", "my dream team", "my tier list", "my ranking", "who I'd pick". These are explicitly the creator's opinion — the card carries a locked disclaimer saying so — and every pick is still backed by real FIFA numbers (the metric shown per player). Fulfil these (build-your-xi / tier-list / ranking) normally.
+
+REFUSE (set can_fulfill=false with a friendly refusal_reason) only when the fan asks the PLATFORM to assert an objective verdict or something the data can't prove:
+- crown one specific player as the objective best/greatest ("the greatest of all time", "the best player in the world", "better than Messi")
 - predict an outcome ("who will win", "will she be a star")
-- make an off-pitch, personal, or subjective-value claim about a player
-- say anything negative or disparaging about a player
-These are real, often underage, athletes; only neutral on-pitch performance stats are allowed. When refusing, suggest the provable card we CAN make instead (e.g. "I can't crown a GOAT, but I can rank the top 5 by line-breaks — want that?").
+- an off-pitch, personal, or disparaging claim about a player (these are real, often underage, athletes)
+When refusing, offer the provable card we CAN make (e.g. "I can't crown a single GOAT, but I can build YOUR best XI or rank the top 5 by line-breaks — want that?").
 
 Always respond by calling draft_card exactly once.`;
 }
