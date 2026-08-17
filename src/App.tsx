@@ -73,10 +73,8 @@ function AppShell() {
   // ?view=similarity, ?view=calendar, ?view=community, ?view=dashboard) for
   // when we revisit. To restore one to the sidebar, add it back to this array.
   const allNavItems = [
-    { id: 'dashboard' as ViewType,   name: 'Discover',     icon: Home,   category: 'General', workspace: 'Creative' as Workspace },
-    { id: 'studio' as ViewType,      name: 'Studio',       icon: Boxes,  category: 'Create',  workspace: 'Creative' as Workspace },
-    { id: 'play' as ViewType,        name: 'Choose My XI', icon: Play,   category: 'Create',  workspace: 'Creative' as Workspace },
-    { id: 'leaderboard' as ViewType, name: 'Leaderboard',  icon: Trophy, category: 'Create',  workspace: 'Creative' as Workspace },
+    { id: 'dashboard' as ViewType, name: 'Discover', icon: Home,  category: 'General', workspace: 'Creative' as Workspace },
+    { id: 'studio' as ViewType,    name: 'Studio',   icon: Boxes, category: 'Create',  workspace: 'Creative' as Workspace },
   ];
 
   const switchWorkspace = (ws: Workspace) => {

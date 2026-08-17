@@ -92,13 +92,23 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const { wwcMatches } = useContext(DataContext);
 
+  // Hard-coded backup so the Match Center never renders empty if the live query
+  // is slow/unavailable during the demo. Live data replaces it when present.
+  const FALLBACK_MATCHES: any[] = [
+    { home_team: 'Spain', away_team: 'England', home_score: 1, away_score: 0, stage: 'Final', date: 'Aug 20, 2023', stadium: 'Stadium Australia' },
+    { home_team: 'Spain', away_team: 'Sweden', home_score: 2, away_score: 1, stage: 'Semi-finals', date: 'Aug 15, 2023', stadium: '' },
+    { home_team: 'Australia', away_team: 'England', home_score: 1, away_score: 3, stage: 'Semi-finals', date: 'Aug 16, 2023', stadium: '' },
+    { home_team: 'Japan', away_team: 'Norway', home_score: 3, away_score: 1, stage: 'Round of 16', date: 'Aug 5, 2023', stadium: '' },
+  ];
+  const matches: any[] = wwcMatches.length ? wwcMatches : FALLBACK_MATCHES;
+
   const featured = useMemo(
-    () => wwcMatches.find(m => m.stage === 'Final') ?? wwcMatches[wwcMatches.length - 1] ?? null,
-    [wwcMatches],
+    () => matches.find(m => m.stage === 'Final') ?? matches[matches.length - 1] ?? null,
+    [matches],
   );
   const otherMatches = useMemo(
-    () => wwcMatches.filter(m => m.stage === 'Semi-finals').slice(0, 3),
-    [wwcMatches],
+    () => matches.filter(m => m.stage === 'Semi-finals').slice(0, 3),
+    [matches],
   );
 
   const filtered = activeCategory === 'all'
@@ -271,7 +281,7 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
                         className="px-4 py-2 bg-white text-black text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-zinc-200 transition-colors shadow-lg">
                         Make Card
                       </button>
-                      <button onClick={e => { e.stopPropagation(); onNavigate('play'); }}
+                      <button onClick={e => { e.stopPropagation(); onNavigate('studio'); }}
                         className="px-4 py-2 bg-white/10 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-white/20 transition-colors border border-white/10">
                         Build XI
                       </button>
@@ -296,7 +306,7 @@ export default function Dashboard({ onOpenAgent, onNavigate }: DashboardProps) {
 
             {/* Other matches */}
             <div className="px-6 pb-6 grid grid-cols-3 gap-3 relative z-10 shrink-0">
-              {(otherMatches.length > 0 ? otherMatches : wwcMatches.slice(0, 3)).map((m, i) => (
+              {(otherMatches.length > 0 ? otherMatches : matches.slice(0, 3)).map((m, i) => (
                 <div key={i} onClick={() => onNavigate('studio')}
                   className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 hover:bg-white/[0.06] cursor-pointer transition-all"
                 >
