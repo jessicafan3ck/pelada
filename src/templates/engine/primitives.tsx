@@ -104,10 +104,34 @@ export function Pitch({ lineup, metric, accent, formation = '4-3-3' }: BaseProps
 function lastName(n: string) { const parts = n.split(' '); return parts[parts.length - 1]; }
 
 // ── Misc atoms ────────────────────────────────────────────────────────────────
-export function PlayerPhoto({ player, accent }: BaseProps & { player?: PlayerRecord }) {
-  return <div style={{ width: '100%', height: '100%', borderRadius: 24, background: `radial-gradient(circle at 50% 30%, ${accent}44, rgba(255,255,255,0.05))`, border: `2px solid ${accent}66`, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 16, fontSize: 28, fontWeight: 800, color: '#fff' }}>{player?.player_name}</div>;
+// Polished monogram avatar — reads as an intentional player badge (not a broken
+// image) until real photos are dropped in. Initials from the player's surname,
+// on a team-accent gradient disc, with the name labelled beneath.
+function initials(name?: string): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  const last = parts[parts.length - 1] ?? '';
+  return ((parts[0]?.[0] ?? '') + (last[0] ?? '')).toUpperCase() || '?';
 }
-export function Crest({ accent }: BaseProps) { return <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: accent }} />; }
+export function PlayerPhoto({ player, accent }: BaseProps & { player?: PlayerRecord }) {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+      <div style={{ flex: 1, aspectRatio: '1 / 1', maxHeight: '78%', borderRadius: '50%', background: `radial-gradient(circle at 50% 32%, ${accent}, ${accent}44 62%, rgba(255,255,255,0.06))`, border: `3px solid ${accent}`, boxShadow: `0 0 44px ${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 96, fontWeight: 900, color: '#fff', letterSpacing: '0.02em' }}>
+        {initials(player?.player_name)}
+      </div>
+      {player?.player_name && (
+        <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{player.player_name}</div>
+      )}
+    </div>
+  );
+}
+export function Crest({ accent, player }: BaseProps & { player?: PlayerRecord }) {
+  return (
+    <div style={{ width: '100%', height: '100%', borderRadius: '28%', background: `linear-gradient(160deg, ${accent}, ${accent}88)`, border: `2px solid ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '46%', fontWeight: 900, color: '#fff' }}>
+      {initials(player?.team ?? player?.player_name)}
+    </div>
+  );
+}
 export function Divider({ accent }: BaseProps) { return <div style={{ width: '100%', height: 4, background: accent, borderRadius: 2 }} />; }
 export function Spacer() { return <div />; }
 

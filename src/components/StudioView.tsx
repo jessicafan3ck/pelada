@@ -11,11 +11,12 @@
  * caption + deep-link.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch } from 'lucide-react';
+import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
 import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
+import { draftCard } from '../templates/engine/draftCard';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
@@ -48,13 +49,15 @@ export default function StudioView() {
   const [sceneIndex, setSceneIndex] = useState(0);
   const [remixOf] = useState<string | undefined>(REMIX.remixOf);
 
-  // Reset selections + scene when the user SWITCHES template — but keep the
-  // initial prefill from a remix deep-link on first mount.
-  const firstRun = useRef(true);
-  useEffect(() => {
-    if (firstRun.current) { firstRun.current = false; return; }
-    setSelections({}); setSceneIndex(0);
-  }, [template]);
+  // Prompt-to-Card (front door): fan sentence → real template + validated picks.
+  const [prompt, setPrompt] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const [justDrafted, setJustDrafted] = useState(0);   // bump to re-trigger the reveal
+
+  // Switch template (gallery) — clears the fill. Draft/remix set both at once,
+  // so template changes no longer auto-reset (that would clobber a draft).
+  const pickTemplate = (t: Template) => { setTemplate(t); setSelections({}); setSceneIndex(0); };
 
   // Resolve bindings whenever template or selections change.
   // Live U17 data via Supabase; falls back to the sample fixture if a query fails.
@@ -175,6 +178,30 @@ export default function StudioView() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  // Prompt-to-Card: one sentence → a real, provable card loaded into the editor.
+  const handleGenerate = async () => {
+    const q = prompt.trim();
+    if (!q || generating) return;
+    setGenerating(true); setRefusal(null); setExportResult(null);
+    try {
+      const result = await draftCard(q, players);
+      if (!result.ok) { setRefusal(result.refusal); return; }
+      setTemplate(result.template);
+      setSelections(result.selections);
+      setSceneIndex(0);
+      setJustDrafted(n => n + 1);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const PROMPT_EXAMPLES = [
+    'Top 5 wonderkids by line-breaks',
+    'Build the best U17 XI',
+    'One crazy pressing stat',
+    'Tier list of the standouts',
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -184,6 +211,48 @@ export default function StudioView() {
           <h1 className="text-xl font-black text-white">Studio</h1>
           <p className="text-xs text-zinc-500">Pick a template, plug in U17 data, deploy. <span className="text-green-500/70">Live FIFA U17 data.</span></p>
         </div>
+      </div>
+
+      {/* ── Prompt-to-Card — the front door ────────────────────────────────── */}
+      <div className="rounded-2xl border border-yellow-500/25 bg-gradient-to-br from-yellow-500/[0.07] to-pink-500/[0.04] p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Wand2 className="w-4 h-4 text-yellow-400" />
+          <span className="text-sm font-bold text-white">Describe your card</span>
+          <span className="hidden sm:flex items-center gap-1 ml-auto text-[10px] font-semibold text-emerald-400/80"><ShieldCheck className="w-3 h-3" /> Only claims the FIFA data can prove</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleGenerate(); }}
+            placeholder="e.g. Top 5 wonderkids at the U17 World Cup by line-breaks"
+            className="flex-1 bg-black/50 border border-white/12 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-yellow-500/50"
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={generating || !prompt.trim()}
+            className="px-5 py-3 rounded-xl bg-yellow-500 text-black hover:bg-yellow-400 transition-all text-sm font-black flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {generating
+              ? <><div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Generating…</>
+              : <><Sparkles className="w-4 h-4" /> Generate</>}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {PROMPT_EXAMPLES.map(ex => (
+            <button key={ex} onClick={() => setPrompt(ex)}
+              className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-[11px] text-zinc-400 hover:text-white hover:border-white/20 transition-all">
+              {ex}
+            </button>
+          ))}
+        </div>
+        {/* Refusal — the safety flex made visible */}
+        {refusal && (
+          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-4 py-3 flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <span className="text-xs text-amber-100/90 leading-relaxed">{refusal}</span>
+          </div>
+        )}
       </div>
 
       {/* Remix banner — shown when a follower arrived via someone's remix link */}
@@ -201,7 +270,7 @@ export default function StudioView() {
         {SEED_TEMPLATES.map(t => (
           <button
             key={t.id}
-            onClick={() => setTemplate(t)}
+            onClick={() => pickTemplate(t)}
             className={`text-left px-4 py-3 rounded-2xl border transition-all w-64 ${template.id === t.id ? 'bg-white/8 border-yellow-500/40' : 'bg-white/[0.02] border-white/8 hover:border-white/20'}`}
           >
             <div className="text-sm font-bold text-white">{t.meta.name}</div>
@@ -280,7 +349,7 @@ export default function StudioView() {
             <button
               onClick={handleExportMp4}
               disabled={exportingMp4 || exporting || !isVideoExportAvailable()}
-              title={isVideoExportAvailable() ? 'Render an animated MP4' : 'Set VITE_RENDER_URL to enable MP4 export'}
+              title={isVideoExportAvailable() ? 'Render an animated MP4' : 'Set VITE_VIDEO_ENABLED=true to enable MP4 export'}
               className="flex-1 py-3 rounded-xl bg-pink-500/15 border border-pink-500/40 text-pink-300 hover:bg-pink-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {exportingMp4
@@ -288,10 +357,6 @@ export default function StudioView() {
                 : <><Film className="w-4 h-4" /> MP4{!isVideoExportAvailable() && <span className="text-[10px] opacity-70">(setup)</span>}</>}
             </button>
           </div>
-          <button disabled className="w-full py-2.5 rounded-xl bg-white/5 border border-white/8 text-zinc-600 text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
-            <Sparkles className="w-3.5 h-3.5" /> Ask Co-Pilot to draft this <span className="text-[10px]">(soon)</span>
-          </button>
-
           {/* Export result — download done, now the per-platform deploy recipe */}
           {exportResult && (
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
@@ -348,7 +413,9 @@ export default function StudioView() {
 
         {/* Live 9:16 preview */}
         <div className="flex flex-col items-center gap-3 mx-auto">
-          <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle="@you" width={360} />
+          <div key={justDrafted} className={justDrafted ? 'pelada-reveal' : ''}>
+            <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle="@you" width={360} />
+          </div>
 
           {/* Attribution — one reputation system across creators + technicals */}
           <div className="w-[360px] rounded-xl border border-pink-500/15 bg-pink-500/[0.04] p-3.5">

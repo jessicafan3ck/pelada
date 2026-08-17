@@ -5523,3 +5523,13 @@ html {
     transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1)) rotate(var(--tw-enter-rotate, 0));
   }
 }
+
+/* Prompt-to-Card reveal — the "it just appeared" beat when a draft loads. */
+@keyframes peladaReveal {
+  0%   { opacity: 0; transform: scale(0.92) translateY(10px); filter: blur(6px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.pelada-reveal {
+  animation: peladaReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

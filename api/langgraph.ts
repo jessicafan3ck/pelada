@@ -108,6 +108,71 @@ STRICT RULES:
 - Include a brief comment at the top explaining what the model does
 - Return ONLY Python code, no markdown fences, no explanations`;
 
+// ── Prompt-to-Card (template mode) ───────────────────────────────────────────
+// The fan types one sentence; the model does NOT write free text or invent
+// stats. It routes to one of our real templates and returns a structured draft
+// (template + approved metric + real player ids) via a forced tool call. The
+// enums are built from the catalog the client sends, so the model literally
+// cannot emit an unapproved metric, a fake player, or a claim we can't back.
+function buildTemplateSystem(
+  templates: { id: string; name: string; category: string; tagline: string }[],
+  metrics: { id: string; label: string }[],
+  players: { id: number; name: string; position?: string; team?: string }[]
+) {
+  const tpl = templates.map(t => `- ${t.id} — ${t.name} (${t.category}): ${t.tagline}`).join('\n');
+  const met = metrics.map(m => `- ${m.id} — ${m.label}`).join('\n');
+  const plr = players.map(p => `- ${p.id}: ${p.name}${p.position ? ` (${p.position}` : ''}${p.team ? `${p.position ? ', ' : ' ('}${p.team}` : ''}${p.position || p.team ? ')' : ''}`).join('\n');
+  return `You configure shareable football cards for fans on the Pelada platform. A fan describes the card they want; you pick the best-fitting template and fill its slots by calling draft_card. You never write the card's claims yourself — every number on the card comes from FIFA data through the template, not from you.
+
+## Templates you can choose (template_id)
+${tpl}
+
+## Approved metrics (the ONLY stats a card may show)
+${met}
+
+## Player pool (player_id: name) — for head-to-head only
+${plr}
+
+## How to choose
+- "best XI / my eleven / starting 11" → build-your-xi
+- "top 5 / countdown / ranking / wonderkids" → wonderkid-countdown
+- "tier list / S A B C D" → tier-list
+- "one crazy stat / stat drop / did you know" → stat-drop
+- "compare X and Y / head to head / who's better on the data" → head-to-head (set player_a and player_b from the pool)
+- Pick the metric that best matches the fan's intent from the approved list. If they name an unapproved or vague stat, choose the closest approved one.
+- title: a SHORT, NEUTRAL hook (max 24 chars). Describe the topic, never a verdict. Good: "TOP 5 WONDERKIDS". Banned: "BEST EVER", "GREATEST", "WILL WIN".
+
+## What you MUST refuse (set can_fulfill=false, give a friendly refusal_reason)
+The platform can only state what the data proves. Refuse and reframe if the fan asks you to:
+- claim a superlative as fact ("the greatest of all time", "better than Messi", "the best player in the world")
+- predict an outcome ("who will win", "will she be a star")
+- make an off-pitch, personal, or subjective-value claim about a player
+- say anything negative or disparaging about a player
+These are real, often underage, athletes; only neutral on-pitch performance stats are allowed. When refusing, suggest the provable card we CAN make instead (e.g. "I can't crown a GOAT, but I can rank the top 5 by line-breaks — want that?").
+
+Always respond by calling draft_card exactly once.`;
+}
+
+function buildDraftTool(templateIds: string[], metricIds: string[]) {
+  return {
+    name: 'draft_card',
+    description: 'Configure a shareable card from the fan\'s request, or refuse if it asks for an unprovable claim.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        can_fulfill: { type: 'boolean', description: 'false if the request asks for a superlative, prediction, or subjective/off-pitch claim we cannot back with data' },
+        refusal_reason: { type: 'string', description: 'If can_fulfill is false: a friendly one-sentence reframe suggesting the provable card we can make instead' },
+        template_id: { type: 'string', enum: templateIds, description: 'The template to use' },
+        metric: { type: 'string', enum: metricIds, description: 'The approved metric the card shows' },
+        title: { type: 'string', description: 'Short neutral hook, max 24 chars, no verdicts/superlatives' },
+        player_a: { type: 'integer', description: 'head-to-head only: first player_id from the pool' },
+        player_b: { type: 'integer', description: 'head-to-head only: second player_id from the pool' },
+      },
+      required: ['can_fulfill'],
+    },
+  };
+}
+
 const TOOLS = [
   {
     name: 'show_visualization',
@@ -198,6 +263,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     // Demo fallback when no API key is configured
+    if (mode === 'template') {
+      // Degrade to a sensible, provable default so the flow still works.
+      return res.json({
+        draft: { can_fulfill: true, template_id: 'wonderkid-countdown', metric: 'line_breaks', title: 'TOP 5 WONDERKIDS' },
+        debug_trace: ['No ANTHROPIC_API_KEY set — using default draft'],
+      });
+    }
     return res.json({
       final_response: getMockResponse(message, mode),
       visualization_type: null,
@@ -230,6 +302,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         code: { lang: 'python', code: code.trim() },
         debug_trace: []
       });
+    }
+
+    if (mode === 'template') {
+      const templateCatalog = req.body.templateCatalog || [];
+      const metricCatalog = req.body.metricCatalog || [];
+      const playerPool = req.body.playerPool || [];
+      const templateIds = templateCatalog.map((t: any) => t.id);
+      const metricIds = metricCatalog.map((m: any) => m.id);
+      if (!templateIds.length || !metricIds.length) {
+        return res.status(400).json({ error: 'template mode requires templateCatalog and metricCatalog' });
+      }
+      const system = buildTemplateSystem(templateCatalog, metricCatalog, playerPool);
+      const result = await callClaude(system, conversationHistory, [buildDraftTool(templateIds, metricIds)], 400);
+      const call = result.content.find((b: any) => b.type === 'tool_use' && b.name === 'draft_card');
+      if (!call) {
+        return res.json({ draft: null, final_response: "I couldn't turn that into a card. Try describing the players or stat you want to show." });
+      }
+      return res.json({ draft: call.input, debug_trace: [`model: ${result.model}`, `stop_reason: ${result.stop_reason}`] });
     }
 
     // Agent mode with tool use — inject live match/player context into system prompt
