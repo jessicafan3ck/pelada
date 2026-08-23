@@ -297,4 +297,49 @@ export const HEAD_TO_HEAD: Template = {
   },
 };
 
-export const SEED_TEMPLATES: Template[] = [BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. PLAYER CARD — the hero collectible (production-designed).
+//    The most viral fan format (FUT/Panini card) — but the first that's actually
+//    data-backed: every number is real FIFA event data, led by LINE BREAKS, the
+//    Pelada-exclusive metric, instead of a fabricated OVR.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PLAYER_CARD: Template = {
+  id: 'player-card',
+  version: 1,
+  meta: {
+    name: 'Player Card',
+    tagline: 'A premium collectible — but every number is real FIFA data.',
+    category: 'reveal',
+    authorId: 'pelada',
+  },
+  canvas: { aspect: '9:16', width: 1080, height: 1920 },
+  style: { accent: { fixed: '#E8197D' }, background: { kind: 'mesh' }, footer: { show: true } },
+  bindings: {
+    player: { kind: 'player', label: 'Pick a player', required: true },
+  },
+  scenes: [
+    {
+      id: 'card',
+      durationMs: 0,
+      transition: 'pop',
+      components: [
+        {
+          id: 'card',
+          type: 'playerCard',
+          layout: { x: 0.05, y: 0.085, w: 0.9, h: 0.8 },
+          data: { player: { binding: 'player' } },
+          anim: { style: 'pop-in' },
+        },
+      ],
+    },
+  ],
+  remix: {
+    remixSlots: ['player'],
+    captionTemplate: 'Real-data player card 🔥 who should I make next? {{credit}} {{hashtag}}',
+    publishable: true,
+  },
+};
+
+// Player Card leads — it's the production hero for the demo.
+export const SEED_TEMPLATES: Template[] = [PLAYER_CARD, BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];

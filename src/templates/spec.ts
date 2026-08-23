@@ -187,7 +187,7 @@ export interface ComponentSpec {
 /** The Pelada-designed primitive atoms. New atoms expand the creative surface for ALL templates. */
 export type PrimitiveType =
   | 'headline' | 'subhead' | 'caption'
-  | 'playerPhoto' | 'crest'
+  | 'playerPhoto' | 'crest' | 'playerCard'
   | 'statChip'      // label + value
   | 'statBar'       // horizontal metric bar (good for ranked lists)
   | 'radar'         // multi-metric, 1–2 players (Head-to-Head)

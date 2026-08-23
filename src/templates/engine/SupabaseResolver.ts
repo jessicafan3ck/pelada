@@ -81,10 +81,16 @@ export class SupabaseResolver implements DataResolver {
   }
 
   private async player(id?: number): Promise<PlayerRecord | null> {
-    if (id == null) return null;
-    const { data, error } = await supabase.from(STATS).select('*').eq('player_id', id).limit(1);
-    if (error) throw new Error(error.message);
-    return (data?.[0] as PlayerRecord) ?? null;
+    if (id == null) return SAMPLE_PLAYERS[0] ?? null;
+    try {
+      const { data, error } = await supabase.from(STATS).select('*').eq('player_id', id).limit(1);
+      if (error) throw new Error(error.message);
+      if (data?.[0]) return data[0] as PlayerRecord;
+    } catch { /* fall through to sample */ }
+    // The pool may have fallen back to SAMPLE_PLAYERS (offline / slow key), whose
+    // ids aren't in the live table — resolve against the sample set so a card
+    // NEVER renders blank. Live data is used whenever the query succeeds.
+    return SAMPLE_PLAYERS.find(p => p.player_id === id) ?? SAMPLE_PLAYERS[0] ?? null;
   }
 
   private async lineup(ids?: number[]): Promise<PlayerRecord[]> {

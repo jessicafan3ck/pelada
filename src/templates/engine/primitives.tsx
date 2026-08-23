@@ -132,6 +132,82 @@ export function Crest({ accent, player }: BaseProps & { player?: PlayerRecord })
     </div>
   );
 }
+
+// ── Player Card — the premium, data-backed collectible (the hero format) ───────
+// Looks like a FUT/Panini card, but every number is real FIFA event data and it
+// leads with LINE BREAKS (Pelada-exclusive) instead of a fabricated OVR.
+const GOLD = '#FFD34E';
+export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerRecord }) {
+  const p = (player ?? {}) as PlayerRecord;
+  const stat = (k: string) => { const v = (p as unknown as Record<string, unknown>)[k]; return typeof v === 'number' ? v : Number(v) || 0; };
+  const name = p.player_name ?? 'PLAYER';
+  const surname = name.trim().split(/\s+/).slice(-1)[0] || name;
+  const first = name.trim().split(/\s+/).slice(0, -1).join(' ');
+  const lineBreaks = stat('line_breaks');
+  const GRID: [string, string][] = [
+    ['Goals', 'goals'], ['Shots', 'shots'], ['Pressings', 'pressings'],
+    ['Progress.', 'ball_progressions'], ['Passes', 'passes'], ['Completed', 'passes_complete'],
+  ];
+  return (
+    <div style={{ width: '100%', height: '100%', borderRadius: 40, padding: 4, background: `linear-gradient(150deg, ${GOLD}, ${accent} 45%, ${GOLD})`, boxShadow: `0 30px 90px ${accent}55` }}>
+      <div style={{ width: '100%', height: '100%', borderRadius: 36, background: `radial-gradient(120% 80% at 50% 0%, ${accent}44, #07070c 55%)`, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '44px 40px 36px' }}>
+        {/* holo sheen */}
+        <div style={{ position: 'absolute', top: '-30%', left: '-20%', width: '90%', height: '60%', background: `linear-gradient(120deg, ${GOLD}22, transparent)`, filter: 'blur(40px)', transform: 'rotate(-12deg)', pointerEvents: 'none' }} />
+
+        {/* top row: position + exclusive tag */}
+        <div style={{ position: 'absolute', top: 40, left: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <div style={{ fontSize: 46, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{(p.position ?? '—').slice(0, 3).toUpperCase()}</div>
+          <div style={{ width: 40, height: 3, background: GOLD, borderRadius: 2 }} />
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>{(p.team ?? '').toUpperCase()}</div>
+        </div>
+        <div style={{ position: 'absolute', top: 44, right: 40, textAlign: 'right' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${GOLD}1f`, border: `1px solid ${GOLD}80`, borderRadius: 999, padding: '6px 14px' }}>
+            <span style={{ color: GOLD, fontSize: 20 }}>★</span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: GOLD, letterSpacing: '0.12em' }}>PELADA EXCLUSIVE</span>
+          </div>
+        </div>
+
+        {/* avatar */}
+        <div style={{ marginTop: 84, width: 300, height: 300, borderRadius: '50%', background: `radial-gradient(circle at 50% 32%, ${accent}, ${accent}55 62%, rgba(255,255,255,0.05))`, border: `4px solid ${GOLD}`, boxShadow: `0 0 60px ${accent}77`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 150, fontWeight: 900, color: '#fff' }}>
+          {initials(name)}
+        </div>
+
+        {/* name */}
+        <div style={{ marginTop: 22, textAlign: 'center', lineHeight: 0.95 }}>
+          {first && <div style={{ fontSize: 30, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{first}</div>}
+          <div style={{ fontSize: 78, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em', textShadow: `0 4px 24px ${accent}88` }}>{surname}</div>
+        </div>
+
+        {/* spacer — pushes the stat block to the lower half, FUT-card style */}
+        <div style={{ flex: 1, minHeight: 20 }} />
+
+        {/* hero exclusive stat */}
+        <div style={{ marginTop: 20, width: '100%', borderRadius: 24, background: `linear-gradient(100deg, ${GOLD}14, transparent)`, border: `1px solid ${GOLD}55`, padding: '18px 26px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: GOLD, letterSpacing: '0.14em', textTransform: 'uppercase' }}>★ Line Breaks</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Tournament · a metric only Pelada has</div>
+          </div>
+          <div style={{ fontSize: 96, fontWeight: 900, color: '#fff', lineHeight: 0.8, textShadow: `0 4px 30px ${GOLD}66` }}>{lineBreaks}</div>
+        </div>
+
+        {/* stat grid */}
+        <div style={{ marginTop: 20, width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'rgba(255,255,255,0.08)', borderRadius: 18, overflow: 'hidden' }}>
+          {GRID.map(([label, key]) => (
+            <div key={key} style={{ background: '#0b0b12', padding: '18px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 46, fontWeight: 900, color: '#fff' }}>{stat(key)}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* footer tag */}
+        <div style={{ marginTop: 18, fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          ★ Real FIFA U17 Data
+        </div>
+      </div>
+    </div>
+  );
+}
 export function Divider({ accent }: BaseProps) { return <div style={{ width: '100%', height: 4, background: accent, borderRadius: 2 }} />; }
 export function Spacer() { return <div />; }
 
@@ -213,5 +289,5 @@ export const PRIMITIVES: Record<string, React.ComponentType<BaseProps & Record<s
   headline: Headline, subhead: Subhead, caption: Caption,
   statChip: StatChip, statBar: StatBar, heroStat: HeroStat,
   radar: Radar, pitch: Pitch, tierGrid: TierGrid, rankRow: RankRow,
-  playerPhoto: PlayerPhoto, crest: Crest, divider: Divider, spacer: Spacer,
+  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, divider: Divider, spacer: Spacer,
 };

@@ -134,6 +134,7 @@ ${met}
 ${plr}
 
 ## How to choose
+- "player card / collectible / sticker / a card for [player]" → player-card (set player_a to that player from the pool; this is our premium hero format)
 - "best XI / my eleven / starting 11" → build-your-xi
 - "top 5 / countdown / ranking / wonderkids" → wonderkid-countdown
 - "tier list / S A B C D" → tier-list
