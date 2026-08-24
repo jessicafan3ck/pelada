@@ -20,7 +20,7 @@ import { draftCard } from '../templates/engine/draftCard';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
-import { exportMp4, isVideoExportAvailable } from '../templates/engine/exportVideo';
+import { exportNodeToVideo } from '../templates/engine/exportVideoClient';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
@@ -160,13 +160,14 @@ export default function StudioView() {
   };
 
   const handleExportMp4 = async () => {
+    if (!exportRef.current) return;
     setExportingMp4(true);
     try {
       const name = slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
-      await exportMp4({ template, resolved, creatorHandle: CREATOR_HANDLE }, name);
+      await exportNodeToVideo(exportRef.current, name);
       setExportResult({ caption: buildCaption(), link: remixLink });
     } catch (e) {
-      console.error('mp4 export failed', e);
+      console.error('video export failed', e);
     } finally {
       setExportingMp4(false);
     }
@@ -348,19 +349,19 @@ export default function StudioView() {
             </button>
             <button
               onClick={handleExportMp4}
-              disabled={exportingMp4 || exporting || !isVideoExportAvailable()}
-              title={isVideoExportAvailable() ? 'Render an animated MP4' : 'Set VITE_VIDEO_ENABLED=true to enable MP4 export'}
+              disabled={exportingMp4 || exporting}
+              title="Record an animated video — this is what posts to TikTok"
               className="flex-1 py-3 rounded-xl bg-pink-500/15 border border-pink-500/40 text-pink-300 hover:bg-pink-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {exportingMp4
-                ? <><div className="w-4 h-4 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" /> Rendering…</>
-                : <><Film className="w-4 h-4" /> MP4{!isVideoExportAvailable() && <span className="text-[10px] opacity-70">(setup)</span>}</>}
+                ? <><div className="w-4 h-4 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" /> Recording…</>
+                : <><Film className="w-4 h-4" /> Save Video</>}
             </button>
           </div>
           {/* Export result — download done, now the per-platform deploy recipe */}
           {exportResult && (
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
-              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Photo saved — ready for TikTok</div>
+              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved — ready for TikTok</div>
 
               {/* platform tabs */}
               <div className="flex gap-2">
