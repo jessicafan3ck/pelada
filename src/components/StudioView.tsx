@@ -19,7 +19,7 @@ import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolv
 import { draftCard } from '../templates/engine/draftCard';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
-import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
+import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
 import { exportMp4, isVideoExportAvailable } from '../templates/engine/exportVideo';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
@@ -150,7 +150,7 @@ export default function StudioView() {
     setExporting(true);
     try {
       const name = slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
-      await exportNodeToPng(exportRef.current, name);
+      await exportNodeToImage(exportRef.current, name);
       setExportResult({ caption: buildCaption(), link: remixLink });
     } catch (e) {
       console.error('export failed', e);

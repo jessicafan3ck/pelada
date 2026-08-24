@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Download, Share2, RotateCcw, Undo2, Sparkles, Wand2, Check, Copy, GitBranch, Clapperboard, Square } from 'lucide-react';
 import { getPlayers } from '../templates/engine/SupabaseResolver';
 import type { PlayerRecord } from '../templates/engine/resolver';
-import { exportNodeToPng, slugify } from '../templates/engine/exportImage';
+import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
 import { shareCard, isNativeShareAvailable } from '../templates/engine/shareCard';
 import { XICard, LABELS_433 } from './play/XICard';
 
@@ -147,7 +147,7 @@ export default function PlayModeXI() {
     if (!exportRef.current) return;
     setBusy('png');
     try {
-      await exportNodeToPng(exportRef.current, slugify(`my-u17-xi-${title}`));
+      await exportNodeToImage(exportRef.current, slugify(`my-u17-xi-${title}`));
       setExportResult({ caption, link: remixLink });
     } finally { setBusy(null); }
   };
