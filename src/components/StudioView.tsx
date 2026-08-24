@@ -455,8 +455,13 @@ export default function StudioView() {
 
       {/* Offscreen full-resolution (1080×1920) render — what the exporter captures.
           Kept at true size so the PNG is share-ready, not the scaled preview. */}
-      <div ref={exportRef} aria-hidden style={{ position: 'fixed', left: -99999, top: 0, width: 1080, height: 1920, pointerEvents: 'none' }}>
-        <TemplateRenderer template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={CREATOR_HANDLE} />
+      <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+        {/* ref is on the INNER node (no offset) — html-to-image bakes the captured
+            node's own position into the render, so a -99999 offset here would push
+            all content off-canvas and export a blank white image. */}
+        <div ref={exportRef} style={{ width: 1080, height: 1920 }}>
+          <TemplateRenderer template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={CREATOR_HANDLE} />
+        </div>
       </div>
     </div>
   );

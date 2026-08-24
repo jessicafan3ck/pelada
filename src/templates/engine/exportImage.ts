@@ -14,9 +14,13 @@ export async function exportNodeToPng(node: HTMLElement, filename: string): Prom
     height: 1920,
     pixelRatio: 1,
     cacheBust: true,
+    backgroundColor: '#050505',
     // skip nodes explicitly marked non-exportable (e.g. dev overlays)
     filter: (n: HTMLElement) => !(n instanceof HTMLElement && n.dataset?.noExport === 'true'),
   };
+
+  // Make sure web fonts are ready — a font still loading can blank the capture.
+  if (document.fonts?.ready) { try { await document.fonts.ready; } catch { /* noop */ } }
 
   // html-to-image's FIRST pass can miss late-loading fonts/layout and render
   // blank; a warm-up pass reliably fixes it.
