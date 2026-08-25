@@ -17,6 +17,7 @@ import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
 import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
 import { draftCard } from '../templates/engine/draftCard';
+import ReactRunner, { stripFences } from './ReactRunner';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
@@ -54,6 +55,11 @@ export default function StudioView() {
   const [generating, setGenerating] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [justDrafted, setJustDrafted] = useState(0);   // bump to re-trigger the reveal
+  // Generate mode: Templates (the 5 data-backed cards) vs Sandbox (freeform
+  // AI-generated widget rendered live in the ReactRunner — for testing looks).
+  const [genMode, setGenMode] = useState<'template' | 'sandbox'>('template');
+  const [widgetCode, setWidgetCode] = useState<string | null>(null);
+  const [widgetError, setWidgetError] = useState<string | null>(null);
 
   // Switch template (gallery) — clears the fill. Draft/remix set both at once,
   // so template changes no longer auto-reset (that would clobber a draft).
@@ -179,12 +185,38 @@ export default function StudioView() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  // Prompt-to-Card: one sentence → a real, provable card loaded into the editor.
+  // Feed the sandbox widget generator the real U17 pool so charts use real data.
+  const buildSandboxMessage = (q: string) => {
+    const data = [...players]
+      .sort((a, b) => Number(b.line_breaks ?? 0) - Number(a.line_breaks ?? 0))
+      .slice(0, 12)
+      .map(p => ({
+        name: p.player_name, team: p.team,
+        line_breaks: Number(p.line_breaks ?? 0), goals: Number(p.goals ?? 0),
+        pressings: Number(p.pressings ?? 0), passes: Number(p.passes_complete ?? 0),
+      }));
+    return `${q}\n\nUse ONLY this real FIFA U17 Women's World Cup player data (do not invent numbers):\n${JSON.stringify(data)}`;
+  };
+
+  // Generate: Templates → a real card; Sandbox → a freeform widget in the runner.
   const handleGenerate = async () => {
     const q = prompt.trim();
     if (!q || generating) return;
     setGenerating(true); setRefusal(null); setExportResult(null);
     try {
+      if (genMode === 'sandbox') {
+        setWidgetError(null);
+        try {
+          const res = await fetch('/api/langgraph', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: buildSandboxMessage(q), mode: 'widget' }),
+          });
+          const data = await res.json();
+          if (data.code?.code) setWidgetCode(stripFences(data.code.code));
+          else setWidgetError(data.final_response || "Couldn't generate that — try describing a chart or comparison.");
+        } catch { setWidgetError('The sandbox generator is offline right now.'); }
+        return;
+      }
       const result = await draftCard(q, players);
       if (!result.ok) { setRefusal(result.refusal); return; }
       setTemplate(result.template);
@@ -196,12 +228,9 @@ export default function StudioView() {
     }
   };
 
-  const PROMPT_EXAMPLES = [
-    'Top 5 wonderkids by line-breaks',
-    'Build the best U17 XI',
-    'One crazy pressing stat',
-    'Tier list of the standouts',
-  ];
+  const PROMPT_EXAMPLES = genMode === 'sandbox'
+    ? ['Bar chart of the top 8 by line-breaks', 'Scatter: pressings vs line-breaks', 'Radar comparing two midfielders', 'Ranked list with team colors']
+    : ['Top 5 wonderkids by line-breaks', 'Build the best U17 XI', 'One crazy pressing stat', 'Tier list of the standouts'];
 
   return (
     <div className="space-y-6">
@@ -218,15 +247,22 @@ export default function StudioView() {
       <div className="rounded-2xl border border-yellow-500/25 bg-gradient-to-br from-yellow-500/[0.07] to-pink-500/[0.04] p-5">
         <div className="flex items-center gap-2 mb-3">
           <Wand2 className="w-4 h-4 text-yellow-400" />
-          <span className="text-sm font-bold text-white">Describe your card</span>
-          <span className="hidden sm:flex items-center gap-1 ml-auto text-[10px] font-semibold text-emerald-400/80"><ShieldCheck className="w-3 h-3" /> Only claims the FIFA data can prove</span>
+          <span className="text-sm font-bold text-white">{genMode === 'sandbox' ? 'Describe a widget to test' : 'Describe your card'}</span>
+          <div className="ml-auto flex bg-white/5 rounded-lg p-0.5 border border-white/10">
+            {(['template', 'sandbox'] as const).map(m => (
+              <button key={m} onClick={() => setGenMode(m)}
+                className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${genMode === m ? 'bg-white/10 text-white shadow-[0_0_10px_rgba(255,255,255,0.06)]' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                {m === 'template' ? 'Templates' : 'Sandbox'}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex gap-2">
           <input
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleGenerate(); }}
-            placeholder="e.g. Top 5 wonderkids at the U17 World Cup by line-breaks"
+            placeholder={genMode === 'sandbox' ? 'e.g. Bar chart of the top 8 by line-breaks (renders live below)' : 'e.g. Top 5 wonderkids at the U17 World Cup by line-breaks'}
             className="flex-1 bg-black/50 border border-white/12 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-yellow-500/50"
           />
           <button
@@ -266,7 +302,23 @@ export default function StudioView() {
         </div>
       )}
 
-      {/* Template gallery */}
+      {/* Sandbox output — freeform widget rendered live in the runner */}
+      {genMode === 'sandbox' && (
+        <div className="rounded-2xl border border-cyan-500/20 bg-black/30 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-bold text-white">Sandbox preview</span>
+            <span className="text-[10px] text-zinc-500 ml-auto">Freeform · experimental · not brand-locked</span>
+          </div>
+          {widgetError && <div className="mb-3 text-xs text-amber-300">{widgetError}</div>}
+          {widgetCode
+            ? <ReactRunner code={widgetCode} height={540} />
+            : <div className="h-[300px] flex items-center justify-center text-center text-zinc-600 text-sm border border-dashed border-white/10 rounded-xl px-6">Describe a chart or comparison above, then Generate — it renders here live, using real U17 data.</div>}
+        </div>
+      )}
+
+      {/* Template gallery + editor (Templates mode only) */}
+      {genMode === 'template' && (<>
       <div className="flex gap-3 flex-wrap">
         {SEED_TEMPLATES.map(t => (
           <button
@@ -453,6 +505,7 @@ export default function StudioView() {
           )}
         </div>
       </div>
+      </>)}
 
       {/* Offscreen full-resolution (1080×1920) render — what the exporter captures.
           Kept at true size so the PNG is share-ready, not the scaled preview. */}
