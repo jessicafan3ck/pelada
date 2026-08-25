@@ -175,6 +175,43 @@ function buildDraftTool(templateIds: string[], metricIds: string[]) {
   };
 }
 
+// Sandbox widgets render INLINE with the app's bundled Recharts (same globals as
+// the EmbedPlayer), so they can be wrapped in a branded 9:16 frame and exported
+// to PNG/MP4. So the sandbox generator targets Recharts, not Chart.js.
+const SANDBOX_SYSTEM = `You generate a self-contained React data-viz widget for the Pelada sandbox.
+
+STRICT RULES:
+- Define exactly ONE function named "Widget" — no imports, no export, no default.
+- Plain JavaScript ONLY — no TypeScript types/interfaces/generics/casts.
+- Available globals: React, useState, useEffect, useMemo, useRef, and these Recharts components:
+  BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid,
+  PolarAngleAxis, ScatterChart, Scatter.
+- ALWAYS wrap a chart in <ResponsiveContainer width="100%" height={380}>…</ResponsiveContainer>.
+- Use the EXACT data from the user message — never invent numbers.
+- Dark theme: text '#e4e4e7', muted '#71717a', grid '#3f3f46'. Vivid series colors:
+  #a855f7, #3b82f6, #10b981, #f59e0b, #ef4444, #E8197D.
+- No fixed pixel widths on the outer container; it must fill its parent.
+- Keep under 80 lines. Return ONLY raw JSX — no markdown fences, no prose.
+
+Example:
+function Widget() {
+  const data = [{ name: 'López', v: 98 }, { name: 'Tanaka', v: 88 }];
+  return (
+    <div style={{ width: '100%' }}>
+      <ResponsiveContainer width="100%" height={380}>
+        <BarChart data={data}>
+          <CartesianGrid stroke="#3f3f46" />
+          <XAxis dataKey="name" stroke="#71717a" />
+          <YAxis stroke="#71717a" />
+          <Tooltip />
+          <Bar dataKey="v" fill="#E8197D" radius={[6,6,0,0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}`;
+
 const TOOLS = [
   {
     name: 'show_visualization',
@@ -302,6 +339,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({
         final_response: 'Model code generated! Review it and click Run to execute.',
         code: { lang: 'python', code: code.trim() },
+        debug_trace: []
+      });
+    }
+
+    if (mode === 'sandbox') {
+      const result = await callClaude(SANDBOX_SYSTEM, conversationHistory, undefined, 2000);
+      const code = result.content.find((b: any) => b.type === 'text')?.text || '';
+      return res.json({
+        final_response: 'Widget generated.',
+        code: { lang: 'jsx', code: code.trim() },
         debug_trace: []
       });
     }

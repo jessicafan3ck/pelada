@@ -17,7 +17,8 @@ import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
 import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
 import { draftCard } from '../templates/engine/draftCard';
-import ReactRunner, { stripFences } from './ReactRunner';
+import { stripFences } from './ReactRunner';
+import { SandboxCard } from './SandboxCard';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
@@ -132,6 +133,12 @@ export default function StudioView() {
 
   // ── Export (Phase 4 — PNG MVP) ──────────────────────────────────────────────
   const exportRef = useRef<HTMLDivElement>(null);
+  const sandboxExportRef = useRef<HTMLDivElement>(null);       // offscreen 1080×1920 SandboxCard
+  const [sandboxTitle, setSandboxTitle] = useState('U17 INSIGHT');
+  const [savedWidgets, setSavedWidgets] = useState<{ title: string; code: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('pelada_saved_widgets') || '[]'); } catch { return []; }
+  });
+  const [savedTick, setSavedTick] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingMp4, setExportingMp4] = useState(false);
   const [exportResult, setExportResult] = useState<{ caption: string; link: string } | null>(null);
@@ -145,19 +152,35 @@ export default function StudioView() {
     [template, selections]
   );
   const buildCaption = () => {
+    if (genMode === 'sandbox') return `${sandboxTitle} 📊 real FIFA U17 data. made with Pelada by ${CREATOR_HANDLE} #PeladaU17`;
     const tag = '#' + template.id.replace(/[^a-z0-9]/gi, '');
     return template.remix.captionTemplate
       .replace('{{credit}}', `made with Pelada by ${CREATOR_HANDLE}`)
       .replace('{{hashtag}}', `${tag} #PeladaU17`);
   };
 
+  // Which offscreen node the exporter captures — the card, or the sandbox frame.
+  const exportNode = () => (genMode === 'sandbox' ? sandboxExportRef.current : exportRef.current);
+  const exportName = () => genMode === 'sandbox'
+    ? slugify(`pelada-${sandboxTitle}`)
+    : slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
+
+  // Save-as-Template (sandbox): persist the widget so it can be reloaded/reused.
+  const saveSandboxWidget = () => {
+    if (!widgetCode) return;
+    const next = [{ title: sandboxTitle || 'Untitled widget', code: widgetCode }, ...savedWidgets].slice(0, 24);
+    setSavedWidgets(next);
+    try { localStorage.setItem('pelada_saved_widgets', JSON.stringify(next)); } catch { /* noop */ }
+    setSavedTick(true); setTimeout(() => setSavedTick(false), 2000);
+  };
+
   const handleExport = async () => {
-    if (!exportRef.current) return;
+    const node = exportNode();
+    if (!node) return;
     setExporting(true);
     try {
-      const name = slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
-      await exportNodeToImage(exportRef.current, name);
-      setExportResult({ caption: buildCaption(), link: remixLink });
+      await exportNodeToImage(node, exportName());
+      setExportResult({ caption: buildCaption(), link: genMode === 'sandbox' ? '' : remixLink });
     } catch (e) {
       console.error('export failed', e);
     } finally {
@@ -166,12 +189,12 @@ export default function StudioView() {
   };
 
   const handleExportMp4 = async () => {
-    if (!exportRef.current) return;
+    const node = exportNode();
+    if (!node) return;
     setExportingMp4(true);
     try {
-      const name = slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
-      await exportNodeToVideo(exportRef.current, name);
-      setExportResult({ caption: buildCaption(), link: remixLink });
+      await exportNodeToVideo(node, exportName());
+      setExportResult({ caption: buildCaption(), link: genMode === 'sandbox' ? '' : remixLink });
     } catch (e) {
       console.error('video export failed', e);
     } finally {
@@ -209,7 +232,7 @@ export default function StudioView() {
         try {
           const res = await fetch('/api/langgraph', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: buildSandboxMessage(q), mode: 'widget' }),
+            body: JSON.stringify({ message: buildSandboxMessage(q), mode: 'sandbox' }),
           });
           const data = await res.json();
           if (data.code?.code) setWidgetCode(stripFences(data.code.code));
@@ -302,18 +325,91 @@ export default function StudioView() {
         </div>
       )}
 
-      {/* Sandbox output — freeform widget rendered live in the runner */}
+      {/* Sandbox — freeform widget rendered inline in a branded, exportable card */}
       {genMode === 'sandbox' && (
-        <div className="rounded-2xl border border-cyan-500/20 bg-black/30 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-bold text-white">Sandbox preview</span>
-            <span className="text-[10px] text-zinc-500 ml-auto">Freeform · experimental · not brand-locked</span>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 items-start">
+          {/* controls */}
+          <div className="space-y-5 max-w-md">
+            {widgetError && <div className="text-xs text-amber-300">{widgetError}</div>}
+            <div>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">Card title</label>
+              <input value={sandboxTitle} maxLength={26} onChange={e => setSandboxTitle(e.target.value.toUpperCase())}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/40" />
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={handleExport} disabled={!widgetCode || exporting || exportingMp4}
+                className="flex-1 py-3 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                {exporting ? <><div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" /> Saving…</> : <><Download className="w-4 h-4" /> Save Photo</>}
+              </button>
+              <button onClick={handleExportMp4} disabled={!widgetCode || exportingMp4 || exporting}
+                className="flex-1 py-3 rounded-xl bg-pink-500/15 border border-pink-500/40 text-pink-300 hover:bg-pink-500/25 transition-all text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                {exportingMp4 ? <><div className="w-4 h-4 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" /> Recording…</> : <><Film className="w-4 h-4" /> Save Video</>}
+              </button>
+            </div>
+            <button onClick={saveSandboxWidget} disabled={!widgetCode}
+              className="w-full py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+              {savedTick ? <><Check className="w-3.5 h-3.5 text-green-400" /> Saved to your widgets</> : <><Boxes className="w-3.5 h-3.5" /> Save as Template</>}
+            </button>
+
+            {savedWidgets.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1.5">Your saved widgets · tap to reload</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {savedWidgets.map((w, i) => (
+                    <button key={i} onClick={() => { setWidgetCode(w.code); setSandboxTitle(w.title); }}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-[11px] text-zinc-300 hover:text-white hover:border-cyan-500/30 transition-all">
+                      {w.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {exportResult && (
+              <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
+                <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved — ready for TikTok</div>
+                <ol className="text-[11px] text-zinc-400 space-y-1 list-decimal pl-4">
+                  <li>Open TikTok → <span className="text-zinc-200 font-semibold">Upload</span> and pick this from your Camera Roll.</li>
+                  <li>Tap <span className="text-zinc-200 font-semibold">Save as draft</span>.</li>
+                </ol>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Caption</p>
+                  <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
+                  <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
+                    {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
+                  </button>
+                  <button onClick={() => window.open('https://www.tiktok.com/upload', '_blank')} className="mt-2 w-full py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
+                    <ExternalLink className="w-3.5 h-3.5" /> Open TikTok
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          {widgetError && <div className="mb-3 text-xs text-amber-300">{widgetError}</div>}
-          {widgetCode
-            ? <ReactRunner code={widgetCode} height={540} />
-            : <div className="h-[300px] flex items-center justify-center text-center text-zinc-600 text-sm border border-dashed border-white/10 rounded-xl px-6">Describe a chart or comparison above, then Generate — it renders here live, using real U17 data.</div>}
+
+          {/* branded preview (scaled) */}
+          <div className="mx-auto">
+            {widgetCode ? (
+              <div style={{ width: 360, height: 640, overflow: 'hidden', borderRadius: 18 }}>
+                <div style={{ width: 1080, height: 1920, transform: 'scale(0.3333)', transformOrigin: 'top left' }}>
+                  <SandboxCard code={widgetCode} title={sandboxTitle} creatorHandle="@you" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-[360px] h-[640px] flex items-center justify-center text-center text-zinc-600 text-sm border border-dashed border-white/10 rounded-2xl px-6">
+                Describe a chart above, then Generate — your branded card renders here, ready to export.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Offscreen full-res sandbox card — what the exporter captures. */}
+      {genMode === 'sandbox' && widgetCode && (
+        <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+          <div ref={sandboxExportRef} style={{ width: 1080, height: 1920 }}>
+            <SandboxCard code={widgetCode} title={sandboxTitle} creatorHandle={CREATOR_HANDLE} />
+          </div>
         </div>
       )}
 
