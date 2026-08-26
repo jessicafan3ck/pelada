@@ -190,7 +190,8 @@ export type PrimitiveType =
   | 'playerPhoto' | 'crest' | 'playerCard'
   | 'statChip'      // label + value
   | 'statBar'       // horizontal metric bar (good for ranked lists)
-  | 'radar'         // multi-metric, 1–2 players (Head-to-Head)
+  | 'radar'         // multi-metric, 1–2 players (Head-to-Head) — deprecated: normalizes/distorts
+  | 'comparePair'   // Head-to-Head as RAW side-by-side numbers (no normalization)
   | 'pitch'         // formation with player slots (Build XI)
   | 'tierGrid'      // S/A/B/C/D rows of slots (Tier List)
   | 'rankRow'       // one countdown entry: rank #, photo, name, club, stat

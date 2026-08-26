@@ -9,6 +9,7 @@
 import React from 'react';
 import type { Formation } from '../spec';
 import { METRIC_LABELS, TEAM_COLORS, type PlayerRecord, type RankEntry, type MetricInfo } from './resolver';
+import { photoFor } from './playerPhotos';
 
 interface BaseProps { accent: string; [k: string]: unknown; }
 
@@ -39,7 +40,7 @@ export function HeroStat({ value, label, entry, metric, accent }: BaseProps & { 
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 240, fontWeight: 900, lineHeight: 0.85, color: accent, textShadow: `0 8px 40px ${accent}88` }}>{v}</div>
       <div style={{ fontSize: 40, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fff', marginTop: 8 }}>{l}</div>
-      {entry && <div style={{ fontSize: 34, fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 20 }}>{entry.player_name} · {entry.team}</div>}
+      {entry && <div style={{ fontSize: 34, fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 20 }}><span style={{ fontSize: 40 }}>{flagFor(entry.team)}</span> {entry.player_name} · {entry.team}</div>}
     </div>
   );
 }
@@ -50,6 +51,7 @@ export function RankRow({ rank, player, metric, accent }: BaseProps & { rank?: n
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 28, width: '100%', height: '100%' }}>
       <div style={{ fontSize: 200, fontWeight: 900, color: accent, width: 240, textAlign: 'center', lineHeight: 0.9 }}>#{rank ?? player.rank}</div>
+      <div style={{ fontSize: 96, lineHeight: 1 }}>{flagFor(player.team)}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 60, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.player_name}</div>
         <div style={{ fontSize: 32, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{player.team}</div>
@@ -57,6 +59,53 @@ export function RankRow({ rank, player, metric, accent }: BaseProps & { rank?: n
           <span style={{ fontSize: 72, fontWeight: 900, color: accent }}>{player.value}</span>
           <span style={{ fontSize: 28, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>{metric?.label ?? ''}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Head-to-head, RAW side-by-side (replaces the normalized radar) ─────────────
+// A radar normalizes different stats onto one axis and visually distorts small
+// gaps. This shows the two players' RAW numbers per metric, with bars scaled to
+// that row's max only (an honest ratio) — no cross-metric normalization.
+export function ComparePair({ comparison, accent }: BaseProps & { comparison?: { players: PlayerRecord[]; metrics: string[] } }) {
+  const players = (comparison?.players ?? []).slice(0, 2);
+  const metrics = comparison?.metrics ?? [];
+  const [A, B] = players;
+  const num = (p: PlayerRecord | undefined, k: string) => { const v = p ? (p as unknown as Record<string, unknown>)[k] : 0; return typeof v === 'number' ? v : Number(v) || 0; };
+  const sur = (p?: PlayerRecord) => (p?.player_name ?? '—').trim().split(/\s+/).slice(-1)[0] || '—';
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* header: flag + surname each side */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <div style={{ fontSize: 96, lineHeight: 1 }}>{flagFor(A?.team)}</div>
+          <div style={{ fontSize: 46, fontWeight: 900, color: '#fff', textTransform: 'uppercase' }}>{sur(A)}</div>
+        </div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: accent, padding: '0 8px 18px' }}>VS</div>
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <div style={{ fontSize: 96, lineHeight: 1 }}>{flagFor(B?.team)}</div>
+          <div style={{ fontSize: 46, fontWeight: 900, color: '#fff', textTransform: 'uppercase' }}>{sur(B)}</div>
+        </div>
+      </div>
+      {/* metric rows: raw numbers + honest per-row proportional bars */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, justifyContent: 'center' }}>
+        {metrics.map(k => {
+          const a = num(A, k), b = num(B, k); const max = Math.max(a, b, 1); const aWin = a >= b;
+          return (
+            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 130, textAlign: 'right', fontSize: 50, fontWeight: 900, color: aWin ? accent : '#fff' }}>{a}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ textAlign: 'center', fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{METRIC_LABELS[k] ?? k}</div>
+                <div style={{ display: 'flex', height: 14, gap: 6 }}>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}><div style={{ width: `${(a / max) * 100}%`, background: aWin ? accent : 'rgba(255,255,255,0.3)', borderRadius: 7 }} /></div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}><div style={{ width: `${(b / max) * 100}%`, background: !aWin ? accent : 'rgba(255,255,255,0.3)', borderRadius: 7 }} /></div>
+                </div>
+              </div>
+              <div style={{ width: 130, textAlign: 'left', fontSize: 50, fontWeight: 900, color: !aWin ? accent : '#fff' }}>{b}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -176,20 +225,24 @@ export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerReco
   const team = (p.team ?? '').toUpperCase();
   const teamColor = TEAM_COLORS[team] ?? accent;
   const number = p.shirt_number != null ? String(p.shirt_number) : '';
+  const photo = photoFor(name, p.player_id);
   // Raw counts only — clear labels, no derived/composite numbers.
   const STATS: [string, string][] = [
     ['Line Breaks', 'line_breaks'], ['Goals', 'goals'], ['Passes', 'passes_complete'], ['Pressings', 'pressings'],
   ];
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-      {/* team-colour glow behind the kit */}
+      {/* team-colour glow */}
       <div style={{ position: 'absolute', top: '6%', width: '78%', height: '46%', background: `radial-gradient(circle, ${teamColor}66, transparent 70%)`, filter: 'blur(60px)', pointerEvents: 'none' }} />
 
-      {/* flag — image hero */}
-      <div style={{ fontSize: 128, lineHeight: 1, marginTop: 4 }}>{flagFor(team)}</div>
-
-      {/* kit — image hero */}
-      <div style={{ marginTop: -8 }}><Jersey color={teamColor} number={number} size={540} /></div>
+      {/* PHOTO SLOT — official portrait drops in; kit+flag is the placeholder */}
+      <div style={{ position: 'relative', width: 600, height: 680, borderRadius: 36, overflow: 'hidden', marginTop: 8, border: `4px solid ${teamColor}`, boxShadow: `0 30px 70px ${teamColor}55`, background: `radial-gradient(circle at 50% 32%, ${teamColor}44, #07070c 72%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {photo
+          ? <img src={photo} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <Jersey color={teamColor} number={number} size={460} />}
+        <div style={{ position: 'absolute', top: 18, left: 20, fontSize: 68, lineHeight: 1 }}>{flagFor(team)}</div>
+        {!photo && <div style={{ position: 'absolute', bottom: 16, right: 20, fontSize: 14, fontWeight: 700, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.26)', textTransform: 'uppercase' }}>Official photo slot</div>}
+      </div>
 
       {/* name (one line) + nation/position (small) */}
       <div style={{ marginTop: 6, fontSize: 88, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, textAlign: 'center', textShadow: `0 4px 24px ${teamColor}99` }}>{surname}</div>
@@ -288,5 +341,5 @@ export const PRIMITIVES: Record<string, React.ComponentType<BaseProps & Record<s
   headline: Headline, subhead: Subhead, caption: Caption,
   statChip: StatChip, statBar: StatBar, heroStat: HeroStat,
   radar: Radar, pitch: Pitch, tierGrid: TierGrid, rankRow: RankRow,
-  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, divider: Divider, spacer: Spacer,
+  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, comparePair: ComparePair, divider: Divider, spacer: Spacer,
 };

@@ -159,14 +159,14 @@ export const TIER_LIST: Template = {
   version: 1,
   meta: {
     name: 'Player Tier List',
-    tagline: 'Rank the U17 standouts S–A–B–C–D — backed by the data, not vibes.',
+    tagline: 'Your S–A–B–C–D of the U17 standouts — your picks, ordered by a real stat.',
     category: 'ranking',
     authorId: 'pelada',
   },
   canvas: { aspect: '9:16', width: 1080, height: 1920 },
   style: { accent: { fixed: '#3b82f6' }, background: { kind: 'mesh' }, footer: { show: true } },
   bindings: {
-    title: { kind: 'text', label: 'Title', default: 'U17 TIER LIST', maxLength: 24 },
+    title: { kind: 'text', label: 'Title', default: 'MY U17 TIER LIST', maxLength: 24 },
     metric: {
       kind: 'metric',
       label: 'Tier by',
@@ -262,7 +262,7 @@ export const HEAD_TO_HEAD: Template = {
   version: 1,
   meta: {
     name: 'Head-to-Head',
-    tagline: 'Two U17 stars, one radar — settle the debate with the data.',
+    tagline: 'Two U17 stars, raw numbers side by side — settle the debate with the data.',
     category: 'comparison',
     authorId: 'pelada',
   },
@@ -286,7 +286,7 @@ export const HEAD_TO_HEAD: Template = {
       transition: 'fade',
       components: [
         { id: 'title', type: 'headline', layout: { x: 0.06, y: 0.06, w: 0.88, h: 0.08, align: 'center' }, data: { text: { binding: 'title' } } },
-        { id: 'radar', type: 'radar', layout: { x: 0.04, y: 0.18, w: 0.92, h: 0.68 }, data: { comparison: { binding: 'compare' } } },
+        { id: 'compare', type: 'comparePair', layout: { x: 0.06, y: 0.16, w: 0.88, h: 0.72 }, data: { comparison: { binding: 'compare' } } },
       ],
     },
   ],
