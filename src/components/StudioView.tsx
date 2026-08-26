@@ -147,8 +147,10 @@ export default function StudioView() {
 
   // The remix deep-link carries the template + the creator's exact config, so a
   // follower who taps it lands in Studio on this template, prefilled.
+  // Remix links open the CLOSED template-only space (?use=…), not the full app —
+  // a fan lands in a focused mini-app to use just this template.
   const remixLink = useMemo(
-    () => `${window.location.origin}/?view=studio&template=${template.id}&cfg=${encodeCfg(selections)}&remixOf=${encodeURIComponent(CREATOR_HANDLE)}`,
+    () => `${window.location.origin}/?use=${template.id}&cfg=${encodeCfg(selections)}&remixOf=${encodeURIComponent(CREATOR_HANDLE)}`,
     [template, selections]
   );
   const buildCaption = () => {
