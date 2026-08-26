@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import type { Formation } from '../spec';
-import { METRIC_LABELS, type PlayerRecord, type RankEntry, type MetricInfo } from './resolver';
+import { METRIC_LABELS, TEAM_COLORS, type PlayerRecord, type RankEntry, type MetricInfo } from './resolver';
 
 interface BaseProps { accent: string; [k: string]: unknown; }
 
@@ -133,77 +133,76 @@ export function Crest({ accent, player }: BaseProps & { player?: PlayerRecord })
   );
 }
 
-// ── Player Card — the premium, data-backed collectible (the hero format) ───────
-// Looks like a FUT/Panini card, but every number is real FIFA event data and it
-// leads with LINE BREAKS (Pelada-exclusive) instead of a fabricated OVR.
-const GOLD = '#FFD34E';
+// ── Player Card — image-forward, raw-stats-only collectible ────────────────────
+// Deliberately NOT face-photo-led (the data is U17 — minors): the hero imagery is
+// the kit + national flag + shirt number. Only RAW counts are shown, each with a
+// plain label + provenance — no composite ratings, no tiers, no editorializing,
+// so a number can't be misread as a Pelada judgement.
+const FLAGS: Record<string, string> = {
+  SPAIN: '🇪🇸', USA: '🇺🇸', 'UNITED STATES': '🇺🇸', ENGLAND: '🇬🇧', JAPAN: '🇯🇵', BRAZIL: '🇧🇷',
+  'KOREA DPR': '🇰🇵', 'NORTH KOREA': '🇰🇵', NIGERIA: '🇳🇬', COLOMBIA: '🇨🇴', POLAND: '🇵🇱',
+  GERMANY: '🇩🇪', FRANCE: '🇫🇷', NETHERLANDS: '🇳🇱', ITALY: '🇮🇹', MEXICO: '🇲🇽', CANADA: '🇨🇦',
+  AUSTRALIA: '🇦🇺', SWEDEN: '🇸🇪', NORWAY: '🇳🇴', ZAMBIA: '🇿🇲', MOROCCO: '🇲🇦', ECUADOR: '🇪🇨',
+  KENYA: '🇰🇪', PARAGUAY: '🇵🇾', 'NEW ZEALAND': '🇳🇿', 'IVORY COAST': '🇨🇮', PORTUGAL: '🇵🇹',
+};
+const flagFor = (team?: string) => FLAGS[(team ?? '').toUpperCase()] ?? '🏳️';
+
+// Readable number colour on any kit colour (light kits get a dark number).
+function textOn(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return '#fff';
+  const n = parseInt(m[1], 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#0b0b12' : '#fff';
+}
+
+function Jersey({ color, number, size }: { color: string; number: string; size: number }) {
+  const nc = textOn(color);
+  return (
+    <svg viewBox="0 0 220 210" width={size} height={size} style={{ filter: 'drop-shadow(0 24px 44px rgba(0,0,0,0.55))' }}>
+      <path d="M70,28 L92,16 Q110,32 128,16 L150,28 L200,60 L176,98 L152,82 L152,192 Q110,204 68,192 L68,82 L44,98 L20,60 Z"
+        fill={color} stroke="rgba(255,255,255,0.5)" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M92,16 Q110,42 128,16" fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth="5" />
+      {number && <text x="110" y="150" textAnchor="middle" fontSize="92" fontWeight="900" fill={nc} style={{ letterSpacing: '-3px' }}>{number}</text>}
+    </svg>
+  );
+}
+
 export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerRecord }) {
   const p = (player ?? {}) as PlayerRecord;
   const stat = (k: string) => { const v = (p as unknown as Record<string, unknown>)[k]; return typeof v === 'number' ? v : Number(v) || 0; };
   const name = p.player_name ?? 'PLAYER';
   const surname = name.trim().split(/\s+/).slice(-1)[0] || name;
-  const first = name.trim().split(/\s+/).slice(0, -1).join(' ');
-  const lineBreaks = stat('line_breaks');
-  const GRID: [string, string][] = [
-    ['Goals', 'goals'], ['Shots', 'shots'], ['Pressings', 'pressings'],
-    ['Progress.', 'ball_progressions'], ['Passes', 'passes'], ['Completed', 'passes_complete'],
+  const team = (p.team ?? '').toUpperCase();
+  const teamColor = TEAM_COLORS[team] ?? accent;
+  const number = p.shirt_number != null ? String(p.shirt_number) : '';
+  // Raw counts only — clear labels, no derived/composite numbers.
+  const STATS: [string, string][] = [
+    ['Line Breaks', 'line_breaks'], ['Goals', 'goals'], ['Passes', 'passes_complete'], ['Pressings', 'pressings'],
   ];
   return (
-    <div style={{ width: '100%', height: '100%', borderRadius: 40, padding: 4, background: `linear-gradient(150deg, ${GOLD}, ${accent} 45%, ${GOLD})`, boxShadow: `0 30px 90px ${accent}55` }}>
-      <div style={{ width: '100%', height: '100%', borderRadius: 36, background: `radial-gradient(120% 80% at 50% 0%, ${accent}44, #07070c 55%)`, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '44px 40px 36px' }}>
-        {/* holo sheen */}
-        <div style={{ position: 'absolute', top: '-30%', left: '-20%', width: '90%', height: '60%', background: `linear-gradient(120deg, ${GOLD}22, transparent)`, filter: 'blur(40px)', transform: 'rotate(-12deg)', pointerEvents: 'none' }} />
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+      {/* team-colour glow behind the kit */}
+      <div style={{ position: 'absolute', top: '6%', width: '78%', height: '46%', background: `radial-gradient(circle, ${teamColor}66, transparent 70%)`, filter: 'blur(60px)', pointerEvents: 'none' }} />
 
-        {/* top row: position + exclusive tag */}
-        <div style={{ position: 'absolute', top: 40, left: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <div style={{ fontSize: 46, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{(p.position ?? '—').slice(0, 3).toUpperCase()}</div>
-          <div style={{ width: 40, height: 3, background: GOLD, borderRadius: 2 }} />
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>{(p.team ?? '').toUpperCase()}</div>
-        </div>
-        <div style={{ position: 'absolute', top: 44, right: 40, textAlign: 'right' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${GOLD}1f`, border: `1px solid ${GOLD}80`, borderRadius: 999, padding: '6px 14px' }}>
-            <span style={{ color: GOLD, fontSize: 20 }}>★</span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: GOLD, letterSpacing: '0.12em' }}>PELADA EXCLUSIVE</span>
+      {/* flag — image hero */}
+      <div style={{ fontSize: 128, lineHeight: 1, marginTop: 4 }}>{flagFor(team)}</div>
+
+      {/* kit — image hero */}
+      <div style={{ marginTop: -8 }}><Jersey color={teamColor} number={number} size={540} /></div>
+
+      {/* name (one line) + nation/position (small) */}
+      <div style={{ marginTop: 6, fontSize: 88, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, textAlign: 'center', textShadow: `0 4px 24px ${teamColor}99` }}>{surname}</div>
+      <div style={{ marginTop: 10, fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{team}{p.position ? ` · ${p.position}` : ''}</div>
+
+      {/* raw stat strip — anchored to the bottom */}
+      <div style={{ marginTop: 'auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 22, overflow: 'hidden' }}>
+        {STATS.map(([label, key]) => (
+          <div key={key} style={{ background: '#0b0b12', padding: '24px 6px', textAlign: 'center' }}>
+            <div style={{ fontSize: 58, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{stat(key)}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 6 }}>{label}</div>
           </div>
-        </div>
-
-        {/* avatar */}
-        <div style={{ marginTop: 84, width: 300, height: 300, borderRadius: '50%', background: `radial-gradient(circle at 50% 32%, ${accent}, ${accent}55 62%, rgba(255,255,255,0.05))`, border: `4px solid ${GOLD}`, boxShadow: `0 0 60px ${accent}77`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 150, fontWeight: 900, color: '#fff' }}>
-          {initials(name)}
-        </div>
-
-        {/* name */}
-        <div style={{ marginTop: 22, textAlign: 'center', lineHeight: 0.95 }}>
-          {first && <div style={{ fontSize: 30, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{first}</div>}
-          <div style={{ fontSize: 78, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em', textShadow: `0 4px 24px ${accent}88` }}>{surname}</div>
-        </div>
-
-        {/* spacer — pushes the stat block to the lower half, FUT-card style */}
-        <div style={{ flex: 1, minHeight: 20 }} />
-
-        {/* hero exclusive stat */}
-        <div style={{ marginTop: 20, width: '100%', borderRadius: 24, background: `linear-gradient(100deg, ${GOLD}14, transparent)`, border: `1px solid ${GOLD}55`, padding: '18px 26px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: GOLD, letterSpacing: '0.14em', textTransform: 'uppercase' }}>★ Line Breaks</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Tournament · a metric only Pelada has</div>
-          </div>
-          <div style={{ fontSize: 96, fontWeight: 900, color: '#fff', lineHeight: 0.8, textShadow: `0 4px 30px ${GOLD}66` }}>{lineBreaks}</div>
-        </div>
-
-        {/* stat grid */}
-        <div style={{ marginTop: 20, width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'rgba(255,255,255,0.08)', borderRadius: 18, overflow: 'hidden' }}>
-          {GRID.map(([label, key]) => (
-            <div key={key} style={{ background: '#0b0b12', padding: '18px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: 46, fontWeight: 900, color: '#fff' }}>{stat(key)}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* footer tag */}
-        <div style={{ marginTop: 18, fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-          ★ Real FIFA U17 Data
-        </div>
+        ))}
       </div>
     </div>
   );
