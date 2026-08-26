@@ -508,6 +508,21 @@ export default function StudioView() {
                 : <><Film className="w-4 h-4" /> Save Video</>}
             </button>
           </div>
+
+          {/* Always-visible remix/share link — opens the closed template-only space */}
+          <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400/70">Remix link · opens just this template</p>
+              <button onClick={() => copy(remixLink, 'link')} className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white">
+                {copied === 'link' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+              </button>
+            </div>
+            <p className="text-[11px] font-mono text-cyan-300 truncate">{remixLink}</p>
+            <a href={remixLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-400 hover:text-white">
+              Open the fan space <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
           {/* Export result — download done, now the per-platform deploy recipe */}
           {exportResult && (
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
