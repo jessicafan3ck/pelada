@@ -84,7 +84,6 @@ function AppShell() {
   };
 
   const visibleNav = allNavItems.filter(i => i.workspace === workspace);
-  const categories = [...new Set(visibleNav.map(i => i.category))];
 
   const renderView = () => {
     switch (currentView) {
@@ -141,36 +140,26 @@ function AppShell() {
             surface (single Creative surface). Restore WORKSPACES.map here if the
             Technical suite returns to the sidebar. */}
 
-        {/* Nav */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-6" style={{ paddingTop: 32, paddingBottom: 24 }}>
-          {categories.map(category => {
-            const accent = CATEGORY_ACCENT[category as keyof typeof CATEGORY_ACCENT] ?? CATEGORY_ACCENT.General;
+        {/* Nav — flat list (the surface is small enough that per-tab section
+            headers just read as empty scaffolding) */}
+        <div className="flex-1 overflow-y-auto px-3 space-y-1" style={{ paddingTop: 16, paddingBottom: 24 }}>
+          {visibleNav.map(item => {
+            const accent = CATEGORY_ACCENT[item.category as keyof typeof CATEGORY_ACCENT] ?? CATEGORY_ACCENT.General;
+            const Icon = item.icon;
+            const isActive = currentView === item.id;
             return (
-              <div key={category}>
-                {isSidebarOpen && (
-                  <div className={`px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] ${accent.label}`}>{category}</div>
-                )}
-                <div className="space-y-1">
-                  {visibleNav.filter(i => i.category === category).map(item => {
-                    const Icon = item.icon;
-                    const isActive = currentView === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setCurrentView(item.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden ${
-                          isActive ? 'text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        {isActive && <div className={`absolute inset-0 bg-gradient-to-r ${accent.grad} border border-white/5 rounded-xl`} />}
-                        <Icon className={`w-4 h-4 relative z-10 shrink-0 ${isActive ? accent.icon : 'group-hover:text-zinc-200'}`} />
-                        {isSidebarOpen && <span className="relative z-10 truncate">{item.name}</span>}
-                        {isActive && isSidebarOpen && <div className={`absolute right-3 w-1.5 h-1.5 rounded-full ${accent.dot} ${accent.dotGlow}`} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden ${
+                  isActive ? 'text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {isActive && <div className={`absolute inset-0 bg-gradient-to-r ${accent.grad} border border-white/5 rounded-xl`} />}
+                <Icon className={`w-4 h-4 relative z-10 shrink-0 ${isActive ? accent.icon : 'group-hover:text-zinc-200'}`} />
+                {isSidebarOpen && <span className="relative z-10 truncate">{item.name}</span>}
+                {isActive && isSidebarOpen && <div className={`absolute right-3 w-1.5 h-1.5 rounded-full ${accent.dot} ${accent.dotGlow}`} />}
+              </button>
             );
           })}
         </div>
