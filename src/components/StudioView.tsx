@@ -12,7 +12,7 @@
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck, ExternalLink, Clapperboard, Plus, X } from 'lucide-react';
-import { SEED_TEMPLATES } from '../templates/examples';
+import { SEED_TEMPLATES, MEET_HER } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
 import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
@@ -146,7 +146,9 @@ export default function StudioView() {
   const [platform, setPlatform] = useState<'tiktok' | 'story'>('tiktok');
   // Reel — chain filled cards into one 60s+ MP4 for TikTok monetization.
   const [reel, setReel] = useState<{ id: number; url: string; title: string; ms: number }[]>([]);
-  const [reelBusy, setReelBusy] = useState<'add' | 'export' | null>(null);
+  const [reelBusy, setReelBusy] = useState<'add' | 'export' | 'xi' | null>(null);
+  const meetRef = useRef<HTMLDivElement>(null);            // offscreen Meet-the-XI render
+  const [meetResolved, setMeetResolved] = useState<ResolvedBindings>({});
 
   // The remix deep-link carries the template + the creator's exact config, so a
   // follower who taps it lands in Studio on this template, prefilled.
@@ -233,6 +235,31 @@ export default function StudioView() {
     catch (e) { console.error('reel export failed', e); } finally { setReelBusy(null); }
   };
   const reelSec = Math.round(reel.reduce((s, r) => s + r.ms, 0) / 1000);
+
+  // Meet the XI → Reel: turn a lineup (or the top 11) into an 11-card "know their
+  // names" reel — one recognition card per player, rendered + captured in turn.
+  const meetTheXI = async () => {
+    if (reelBusy || !players.length) return;
+    setReelBusy('xi');
+    try {
+      const ranked = [...players].sort((a, b) => Number(b.line_breaks ?? 0) - Number(a.line_breaks ?? 0));
+      const lineupSel = lineupBindings[0] ? (selections[lineupBindings[0][0]] as number[] | undefined) : undefined;
+      const ids = ((lineupSel && lineupSel.filter(Boolean).length ? lineupSel.filter(Boolean) : ranked.slice(0, 11).map(p => p.player_id)) as number[]).slice(0, 11);
+      const frames: { id: number; url: string; title: string; ms: number }[] = [];
+      for (const id of ids) {
+        const r = await supabaseResolver.resolve(MEET_HER, { player: id, metric: currentMetric })
+          .catch(() => mockResolver.resolve(MEET_HER, { player: id, metric: currentMetric }));
+        setMeetResolved(r);
+        await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(null))));
+        if (meetRef.current) {
+          const url = await captureNodeToDataUrl(meetRef.current);
+          const p = players.find(x => x.player_id === id);
+          frames.push({ id: Date.now() + id, url, title: p?.player_name ?? 'Player', ms: 5500 });
+        }
+      }
+      setReel(rl => [...rl, ...frames]);
+    } catch (e) { console.error('meet the XI failed', e); } finally { setReelBusy(null); }
+  };
 
   // Feed the sandbox widget generator the real U17 pool so charts use real data.
   const buildSandboxMessage = (q: string) => {
@@ -539,10 +566,17 @@ export default function StudioView() {
             </button>
           </div>
 
-          <button onClick={addToReel} disabled={!!reelBusy}
-            className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:border-white/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-            {reelBusy === 'add' ? 'Adding…' : <><Plus className="w-3.5 h-3.5" /> Add to Reel</>}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={addToReel} disabled={!!reelBusy}
+              className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:border-white/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+              {reelBusy === 'add' ? 'Adding…' : <><Plus className="w-3.5 h-3.5" /> Add to Reel</>}
+            </button>
+            <button onClick={meetTheXI} disabled={!!reelBusy || !players.length}
+              title="Turn the XI into an 11-card 'know their names' reel"
+              className="flex-1 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+              {reelBusy === 'xi' ? 'Building…' : <><Clapperboard className="w-3.5 h-3.5" /> Meet the XI → Reel</>}
+            </button>
+          </div>
 
           {/* Always-visible remix/share link — opens the closed template-only space */}
           <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-3.5">
@@ -686,6 +720,13 @@ export default function StudioView() {
           </div>
         </div>
       )}
+
+      {/* Offscreen Meet-the-XI render — captured once per player for the reel */}
+      <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+        <div ref={meetRef} style={{ width: 1080, height: 1920 }}>
+          <TemplateRenderer template={MEET_HER} resolved={meetResolved} sceneIndex={0} creatorHandle={CREATOR_HANDLE} />
+        </div>
+      </div>
 
       {/* Offscreen full-resolution (1080×1920) render — what the exporter captures.
           Kept at true size so the PNG is share-ready, not the scaled preview. */}

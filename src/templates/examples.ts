@@ -217,7 +217,7 @@ export const STAT_DROP: Template = {
   canvas: { aspect: '9:16', width: 1080, height: 1920 },
   style: { accent: { fixed: '#a855f7' }, background: { kind: 'mesh' }, footer: { show: true } },
   bindings: {
-    title: { kind: 'text', label: 'Hook', default: 'NOBODY IS TALKING ABOUT THIS', maxLength: 30 },
+    title: { kind: 'text', label: 'Hook', default: 'REMEMBER THIS NAME', maxLength: 30 },
     metric: {
       kind: 'metric',
       label: 'Stat',
@@ -384,5 +384,53 @@ export const POST_MATCH_RATING: Template = {
   },
 };
 
-// Player Card leads — it's the production hero for the demo.
-export const SEED_TEMPLATES: Template[] = [PLAYER_CARD, POST_MATCH_RATING, BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. KNOW HER NAME — recognition-first. The whole point of the women's-football
+//    thesis: pair a NAME + face + one sticky number so the player becomes known.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const MEET_HER: Template = {
+  id: 'meet-her',
+  version: 1,
+  meta: {
+    name: 'Know Her Name',
+    tagline: 'A face and a number to a name — the fastest way to make a player known.',
+    category: 'reveal',
+    authorId: 'pelada',
+  },
+  canvas: { aspect: '9:16', width: 1080, height: 1920 },
+  style: { accent: { fixed: '#00C2A8' }, background: { kind: 'mesh' }, footer: { show: true } },
+  bindings: {
+    player: { kind: 'player', label: 'Pick a player', required: true },
+    metric: {
+      kind: 'metric',
+      label: 'Hook stat',
+      options: ['line_breaks', 'goals', 'pressings', 'ball_progressions', 'passes_complete'],
+      default: 'line_breaks',
+    },
+  },
+  scenes: [
+    {
+      id: 'card',
+      durationMs: 0,
+      transition: 'pop',
+      components: [
+        {
+          id: 'card',
+          type: 'meetCard',
+          layout: { x: 0.05, y: 0.085, w: 0.9, h: 0.8 },
+          data: { player: { binding: 'player' }, metric: { binding: 'metric' } },
+          anim: { style: 'pop-in' },
+        },
+      ],
+    },
+  ],
+  remix: {
+    remixSlots: ['player', 'metric'],
+    captionTemplate: 'Know her name 👀 {{credit}} {{hashtag}}',
+    publishable: true,
+  },
+};
+
+// Player Card + Know Her Name lead — the recognition-first heroes.
+export const SEED_TEMPLATES: Template[] = [PLAYER_CARD, MEET_HER, POST_MATCH_RATING, BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];

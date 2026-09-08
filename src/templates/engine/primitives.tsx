@@ -10,6 +10,7 @@ import React from 'react';
 import type { Formation } from '../spec';
 import { METRIC_LABELS, TEAM_COLORS, type PlayerRecord, type RankEntry, type MetricInfo } from './resolver';
 import { photoFor } from './playerPhotos';
+import { factsFor } from './playerFacts';
 
 interface BaseProps { accent: string; [k: string]: unknown; }
 
@@ -305,6 +306,54 @@ export function RatingCard({ player, rating, accent }: BaseProps & { player?: Pl
   );
 }
 
+// ── Meet Her — name-FIRST card built for recognition ───────────────────────────
+// The name is the hero; one raw stat is the hook; factual bio bits (if provided)
+// deepen recall. The job of this card is: make you remember the person.
+export function MeetCard({ player, metric, accent }: BaseProps & { player?: PlayerRecord; metric?: MetricInfo }) {
+  const p = (player ?? {}) as PlayerRecord;
+  const num = (k: string) => { const v = (p as unknown as Record<string, unknown>)[k]; return typeof v === 'number' ? v : Number(v) || 0; };
+  const name = p.player_name ?? 'PLAYER';
+  const parts = name.trim().split(/\s+/);
+  const first = parts.slice(0, -1).join(' ');
+  const surname = parts.slice(-1)[0] || name;
+  const team = (p.team ?? '').toUpperCase();
+  const teamColor = TEAM_COLORS[team] ?? accent;
+  const number = p.shirt_number != null ? String(p.shirt_number) : '';
+  const facts = factsFor(name, p.player_id);
+  const metricKey = metric?.key ?? 'line_breaks';
+  const metricLabel = metric?.label ?? METRIC_LABELS[metricKey] ?? 'Line Breaks';
+  const factLine = facts ? [facts.age ? `${facts.age} yrs` : '', facts.club, facts.from].filter(Boolean).join('  ·  ') : '';
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '4%', width: '80%', height: '40%', background: `radial-gradient(circle, ${teamColor}55, transparent 70%)`, filter: 'blur(70px)', pointerEvents: 'none' }} />
+
+      <div style={{ marginTop: 6, fontSize: 24, fontWeight: 800, letterSpacing: '0.28em', color: accent, textTransform: 'uppercase' }}>Know Her Name</div>
+
+      {/* flag + kit */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 12 }}>
+        <div style={{ fontSize: 88, lineHeight: 1 }}>{flagFor(team)}</div>
+        <div><Jersey color={teamColor} number={number} size={150} /></div>
+      </div>
+
+      {/* NAME — the hero */}
+      <div style={{ marginTop: 14, textAlign: 'center', lineHeight: 0.9 }}>
+        {first && <div style={{ fontSize: 40, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{first}</div>}
+        <div style={{ fontSize: 130, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', textShadow: `0 6px 30px ${teamColor}99` }}>{surname}</div>
+      </div>
+      <div style={{ marginTop: 8, fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        {team}{p.position ? `  ·  ${p.position}` : ''}{number ? `  ·  #${number}` : ''}
+      </div>
+      {factLine && <div style={{ marginTop: 8, fontSize: 24, fontWeight: 600, color: 'rgba(255,255,255,0.45)' }}>{factLine}</div>}
+
+      {/* the hook — one raw stat, big */}
+      <div style={{ marginTop: 'auto', width: '100%', borderRadius: 26, background: 'rgba(255,255,255,0.04)', border: `1px solid ${accent}44`, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+        <div style={{ fontSize: 150, fontWeight: 900, color: accent, lineHeight: 0.8, textShadow: `0 6px 34px ${accent}66` }}>{num(metricKey)}</div>
+        <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em', maxWidth: 260 }}>{metricLabel}</div>
+      </div>
+    </div>
+  );
+}
+
 export function Divider({ accent }: BaseProps) { return <div style={{ width: '100%', height: 4, background: accent, borderRadius: 2 }} />; }
 export function Spacer() { return <div />; }
 
@@ -386,5 +435,5 @@ export const PRIMITIVES: Record<string, React.ComponentType<BaseProps & Record<s
   headline: Headline, subhead: Subhead, caption: Caption,
   statChip: StatChip, statBar: StatBar, heroStat: HeroStat,
   radar: Radar, pitch: Pitch, tierGrid: TierGrid, rankRow: RankRow,
-  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, ratingCard: RatingCard, comparePair: ComparePair, divider: Divider, spacer: Spacer,
+  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, ratingCard: RatingCard, meetCard: MeetCard, comparePair: ComparePair, divider: Divider, spacer: Spacer,
 };
