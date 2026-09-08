@@ -8,28 +8,29 @@
  */
 import { toJpeg } from 'html-to-image';
 
+const IMG_OPTS = {
+  width: 1080,
+  height: 1920,
+  pixelRatio: 1,
+  quality: 0.95,
+  cacheBust: true,
+  backgroundColor: '#050505',
+  // skip nodes explicitly marked non-exportable (e.g. dev overlays)
+  filter: (n: HTMLElement) => !(n instanceof HTMLElement && n.dataset?.noExport === 'true'),
+};
+
+/** Capture the 9:16 node to a JPEG data URL (no download) — used for reel frames. */
+export async function captureNodeToDataUrl(node: HTMLElement): Promise<string> {
+  if (document.fonts?.ready) { try { await document.fonts.ready; } catch { /* noop */ } }
+  await toJpeg(node, IMG_OPTS).catch(() => {});   // warm-up pass avoids a blank first capture
+  return toJpeg(node, IMG_OPTS);
+}
+
 /** Export the 9:16 card as a JPEG — the format TikTok/IG photo uploads accept
  *  most reliably, and smaller than PNG. (JPEG has no alpha, so the card's solid
  *  dark background is baked in via backgroundColor.) */
 export async function exportNodeToImage(node: HTMLElement, filename: string): Promise<void> {
-  const opts = {
-    width: 1080,
-    height: 1920,
-    pixelRatio: 1,
-    quality: 0.95,
-    cacheBust: true,
-    backgroundColor: '#050505',
-    // skip nodes explicitly marked non-exportable (e.g. dev overlays)
-    filter: (n: HTMLElement) => !(n instanceof HTMLElement && n.dataset?.noExport === 'true'),
-  };
-
-  // Make sure web fonts are ready — a font still loading can blank the capture.
-  if (document.fonts?.ready) { try { await document.fonts.ready; } catch { /* noop */ } }
-
-  // html-to-image's FIRST pass can miss late-loading fonts/layout and render
-  // blank; a warm-up pass reliably fixes it.
-  await toJpeg(node, opts).catch(() => {});
-  const dataUrl = await toJpeg(node, opts);
+  const dataUrl = await captureNodeToDataUrl(node);
 
   // Download via a Blob URL + a DOM-attached anchor. A bare data: URL on a
   // detached anchor silently fails to download large (multi-MB) images in Chrome.

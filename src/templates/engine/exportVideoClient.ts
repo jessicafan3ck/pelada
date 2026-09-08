@@ -42,6 +42,59 @@ export function canRecordMp4(): boolean {
   return pickMime().ext === 'mp4';
 }
 
+/**
+ * Reel — chain several captured cards into ONE MP4 (the 60s+ TikTok play).
+ * Each item is a pre-captured 1080×1920 frame + how long it holds. Cards
+ * crossfade into each other; the whole thing records as a single clip.
+ */
+export async function exportReelToVideo(items: { url: string; ms: number }[], filename: string): Promise<{ ext: string }> {
+  const imgs = await Promise.all(items.map(it => loadImage(it.url)));
+  const total = items.reduce((s, it) => s + Math.max(500, it.ms), 0);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const { mime, ext } = pickMime();
+  const stream = canvas.captureStream(30);
+  const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 9_000_000 } : undefined);
+  const chunks: BlobPart[] = [];
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  const stopped = new Promise<void>(res => { rec.onstop = () => res(); });
+  rec.start();
+
+  const bounds = items.map((it, i) => ({ start: items.slice(0, i).reduce((s, x) => s + Math.max(500, x.ms), 0), ms: Math.max(500, it.ms) }));
+  const start = performance.now();
+  await new Promise<void>(resolve => {
+    const draw = (now: number) => {
+      const t = now - start;
+      let idx = bounds.findIndex(b => t < b.start + b.ms);
+      if (idx < 0) idx = items.length - 1;
+      const local = t - bounds[idx].start;
+
+      ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, W, H);
+      // crossfade in from the previous card over the first 450ms
+      const fade = Math.min(1, local / 450);
+      if (idx > 0 && fade < 1) { ctx.globalAlpha = 1; ctx.drawImage(imgs[idx - 1], 0, 0, W, H); }
+      ctx.globalAlpha = idx > 0 ? fade : Math.min(1, local / 300);
+      ctx.drawImage(imgs[idx], 0, 0, W, H);
+      // subtle sweep across each card
+      ctx.globalAlpha = 1;
+      const sx = (-0.4 + 1.6 * (local / bounds[idx].ms)) * W;
+      const g = ctx.createLinearGradient(sx - 260, 0, sx + 260, H);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.06)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+      if (t < total) requestAnimationFrame(draw); else resolve();
+    };
+    requestAnimationFrame(draw);
+  });
+
+  rec.stop();
+  await stopped;
+  downloadBlob(new Blob(chunks, { type: mime || 'video/webm' }), filename.endsWith(`.${ext}`) ? filename : `${filename}.${ext}`);
+  return { ext };
+}
+
 export async function exportNodeToVideo(node: HTMLElement, filename: string, durationMs = 4200): Promise<{ ext: string }> {
   if (document.fonts?.ready) { try { await document.fonts.ready; } catch { /* noop */ } }
 

@@ -11,7 +11,7 @@
  * caption + deep-link.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck, ExternalLink, Clapperboard, Plus, X } from 'lucide-react';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
@@ -21,8 +21,8 @@ import { stripFences } from './ReactRunner';
 import { SandboxCard } from './SandboxCard';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
-import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
-import { exportNodeToVideo } from '../templates/engine/exportVideoClient';
+import { exportNodeToImage, captureNodeToDataUrl, slugify } from '../templates/engine/exportImage';
+import { exportNodeToVideo, exportReelToVideo } from '../templates/engine/exportVideoClient';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
@@ -144,6 +144,9 @@ export default function StudioView() {
   const [exportResult, setExportResult] = useState<{ caption: string; link: string } | null>(null);
   const [copied, setCopied] = useState<'caption' | 'link' | null>(null);
   const [platform, setPlatform] = useState<'tiktok' | 'story'>('tiktok');
+  // Reel — chain filled cards into one 60s+ MP4 for TikTok monetization.
+  const [reel, setReel] = useState<{ id: number; url: string; title: string; ms: number }[]>([]);
+  const [reelBusy, setReelBusy] = useState<'add' | 'export' | null>(null);
 
   // The remix deep-link carries the template + the creator's exact config, so a
   // follower who taps it lands in Studio on this template, prefilled.
@@ -209,6 +212,27 @@ export default function StudioView() {
     setCopied(which);
     setTimeout(() => setCopied(null), 2000);
   };
+
+  // ── Reel ────────────────────────────────────────────────────────────────────
+  const addToReel = async () => {
+    const node = exportNode();
+    if (!node || reelBusy) return;
+    setReelBusy('add');
+    try {
+      const url = await captureNodeToDataUrl(node);
+      const title = genMode === 'sandbox' ? (sandboxTitle || 'Widget') : template.meta.name;
+      setReel(r => [...r, { id: Date.now(), url, title, ms: 12000 }]);
+    } catch (e) { console.error('add to reel failed', e); } finally { setReelBusy(null); }
+  };
+  const setCardMs = (id: number, ms: number) => setReel(r => r.map(c => c.id === id ? { ...c, ms } : c));
+  const removeCard = (id: number) => setReel(r => r.filter(c => c.id !== id));
+  const handleExportReel = async () => {
+    if (!reel.length || reelBusy) return;
+    setReelBusy('export');
+    try { await exportReelToVideo(reel.map(r => ({ url: r.url, ms: r.ms })), 'pelada-reel'); }
+    catch (e) { console.error('reel export failed', e); } finally { setReelBusy(null); }
+  };
+  const reelSec = Math.round(reel.reduce((s, r) => s + r.ms, 0) / 1000);
 
   // Feed the sandbox widget generator the real U17 pool so charts use real data.
   const buildSandboxMessage = (q: string) => {
@@ -349,10 +373,16 @@ export default function StudioView() {
                 {exportingMp4 ? <><div className="w-4 h-4 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" /> Recording…</> : <><Film className="w-4 h-4" /> Save Video</>}
               </button>
             </div>
-            <button onClick={saveSandboxWidget} disabled={!widgetCode}
-              className="w-full py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-              {savedTick ? <><Check className="w-3.5 h-3.5 text-green-400" /> Saved to your widgets</> : <><Boxes className="w-3.5 h-3.5" /> Save as Template</>}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={saveSandboxWidget} disabled={!widgetCode}
+                className="flex-1 py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                {savedTick ? <><Check className="w-3.5 h-3.5 text-green-400" /> Saved</> : <><Boxes className="w-3.5 h-3.5" /> Save as Template</>}
+              </button>
+              <button onClick={addToReel} disabled={!widgetCode || !!reelBusy}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:border-white/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                {reelBusy === 'add' ? 'Adding…' : <><Plus className="w-3.5 h-3.5" /> Add to Reel</>}
+              </button>
+            </div>
 
             {savedWidgets.length > 0 && (
               <div>
@@ -509,6 +539,11 @@ export default function StudioView() {
             </button>
           </div>
 
+          <button onClick={addToReel} disabled={!!reelBusy}
+            className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:border-white/25 transition-all text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+            {reelBusy === 'add' ? 'Adding…' : <><Plus className="w-3.5 h-3.5" /> Add to Reel</>}
+          </button>
+
           {/* Always-visible remix/share link — opens the closed template-only space */}
           <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-3.5">
             <div className="flex items-center justify-between mb-1.5">
@@ -619,6 +654,38 @@ export default function StudioView() {
         </div>
       </div>
       </>)}
+
+      {/* Reel tray — chain filled cards into one 60s+ MP4 */}
+      {reel.length > 0 && (
+        <div className="sticky bottom-0 z-40 mt-4 rounded-2xl border border-white/10 bg-black/85 backdrop-blur-xl p-3 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-3 mb-2">
+            <Clapperboard className="w-4 h-4 text-yellow-400" />
+            <span className="text-xs font-bold text-white">Reel</span>
+            <span className="text-[11px] text-zinc-400">{reel.length} card{reel.length > 1 ? 's' : ''} · {reelSec}s</span>
+            <span className={`text-[11px] font-semibold ${reelSec >= 60 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+              {reelSec >= 60 ? '✓ monetization length' : `add ~${Math.max(1, Math.ceil((60 - reelSec) / 12))} more for 60s`}
+            </span>
+            <button onClick={handleExportReel} disabled={!!reelBusy}
+              className="ml-auto px-4 py-2 rounded-lg bg-yellow-500 text-black text-xs font-black flex items-center gap-1.5 hover:bg-yellow-400 disabled:opacity-50">
+              {reelBusy === 'export' ? <><div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Rendering…</> : <><Film className="w-3.5 h-3.5" /> Export Reel</>}
+            </button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {reel.map((c, i) => (
+              <div key={c.id} className="shrink-0 w-24">
+                <div className="relative">
+                  <img src={c.url} alt="" className="w-24 h-[170px] object-cover rounded-lg border border-white/10" />
+                  <div className="absolute top-1 left-1 text-[9px] font-bold text-white bg-black/60 rounded px-1">{i + 1}</div>
+                  <button onClick={() => removeCard(c.id)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5 text-zinc-300 hover:text-white"><X className="w-3 h-3" /></button>
+                </div>
+                <div className="text-[9px] text-zinc-400 truncate mt-1">{c.title}</div>
+                <input type="range" min={3} max={20} value={Math.round(c.ms / 1000)} onChange={e => setCardMs(c.id, Number(e.target.value) * 1000)} className="w-full accent-yellow-400" />
+                <div className="text-[9px] text-zinc-500 text-center">{Math.round(c.ms / 1000)}s</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Offscreen full-resolution (1080×1920) render — what the exporter captures.
           Kept at true size so the PNG is share-ready, not the scaled preview. */}
