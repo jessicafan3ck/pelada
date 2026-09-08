@@ -59,6 +59,8 @@ function localDraft(prompt: string): { can_fulfill: true; template_id: string; m
     has('progress', 'carr') ? 'ball_progressions' :
     has('pass') ? 'passes_complete' :
     'line_breaks';
+  if (has('rate', 'rating', 'out of 10', 'post match', 'post-match', 'player ratings', 'motm', 'man of the match'))
+    return { can_fulfill: true, template_id: 'post-match-rating', metric, title: 'POST-MATCH RATING' };
   if (has('player card', 'collectible', 'sticker', 'fut card', 'fifa card', 'card for', 'card of'))
     return { can_fulfill: true, template_id: 'player-card', metric, title: 'PLAYER CARD' };
   if (has(' xi', 'eleven', 'lineup', 'line up', 'line-up', 'squad', 'starting 11', 'dream team', 'best team'))

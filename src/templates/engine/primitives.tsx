@@ -260,6 +260,51 @@ export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerReco
     </div>
   );
 }
+// ── Post-Match Rating — the RATING is the fan's own opinion (disclaimer-covered);
+// the raw stats sit beneath it as the evidence. No Pelada-computed score. ───────
+export function RatingCard({ player, rating, accent }: BaseProps & { player?: PlayerRecord; rating?: string }) {
+  const p = (player ?? {}) as PlayerRecord;
+  const stat = (k: string) => { const v = (p as unknown as Record<string, unknown>)[k]; return typeof v === 'number' ? v : Number(v) || 0; };
+  const name = p.player_name ?? 'PLAYER';
+  const surname = name.trim().split(/\s+/).slice(-1)[0] || name;
+  const team = (p.team ?? '').toUpperCase();
+  const teamColor = TEAM_COLORS[team] ?? accent;
+  const number = p.shirt_number != null ? String(p.shirt_number) : '';
+  const STATS: [string, string][] = [
+    ['Line Breaks', 'line_breaks'], ['Goals', 'goals'], ['Passes', 'passes_complete'], ['Pressings', 'pressings'],
+  ];
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '18%', width: '80%', height: '44%', background: `radial-gradient(circle, ${accent}55, transparent 70%)`, filter: 'blur(70px)', pointerEvents: 'none' }} />
+
+      {/* identity: flag + kit + name (compact) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 8 }}>
+        <div style={{ fontSize: 88, lineHeight: 1 }}>{flagFor(team)}</div>
+        <div><Jersey color={teamColor} number={number} size={150} /></div>
+      </div>
+      <div style={{ marginTop: 6, fontSize: 66, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.95, textAlign: 'center', textShadow: `0 4px 24px ${teamColor}88` }}>{surname}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{team}{p.position ? ` · ${p.position}` : ''}</div>
+
+      {/* RATING hero — explicitly the fan's own */}
+      <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: accent, letterSpacing: '0.2em', textTransform: 'uppercase' }}>My Rating</div>
+        <div style={{ fontSize: 320, fontWeight: 900, color: accent, lineHeight: 0.78, textShadow: `0 8px 50px ${accent}77` }}>{rating || '–'}</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>Out of 10</div>
+      </div>
+
+      {/* raw stats — the evidence */}
+      <div style={{ marginTop: 'auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 22, overflow: 'hidden' }}>
+        {STATS.map(([label, key]) => (
+          <div key={key} style={{ background: '#0b0b12', padding: '22px 6px', textAlign: 'center' }}>
+            <div style={{ fontSize: 54, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{stat(key)}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 6 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Divider({ accent }: BaseProps) { return <div style={{ width: '100%', height: 4, background: accent, borderRadius: 2 }} />; }
 export function Spacer() { return <div />; }
 
@@ -341,5 +386,5 @@ export const PRIMITIVES: Record<string, React.ComponentType<BaseProps & Record<s
   headline: Headline, subhead: Subhead, caption: Caption,
   statChip: StatChip, statBar: StatBar, heroStat: HeroStat,
   radar: Radar, pitch: Pitch, tierGrid: TierGrid, rankRow: RankRow,
-  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, comparePair: ComparePair, divider: Divider, spacer: Spacer,
+  playerPhoto: PlayerPhoto, crest: Crest, playerCard: PlayerCard, ratingCard: RatingCard, comparePair: ComparePair, divider: Divider, spacer: Spacer,
 };

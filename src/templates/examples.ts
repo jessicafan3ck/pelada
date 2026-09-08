@@ -341,5 +341,48 @@ export const PLAYER_CARD: Template = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. POST-MATCH RATING — rate a player after a game. The RATING is the fan's own
+//    opinion (disclaimer-covered); the raw stats sit beneath it as evidence.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const POST_MATCH_RATING: Template = {
+  id: 'post-match-rating',
+  version: 1,
+  meta: {
+    name: 'Post-Match Rating',
+    tagline: 'Rate a player out of 10 — your call, backed by the raw numbers.',
+    category: 'reveal',
+    authorId: 'pelada',
+  },
+  canvas: { aspect: '9:16', width: 1080, height: 1920 },
+  style: { accent: { fixed: '#f59e0b' }, background: { kind: 'mesh' }, footer: { show: true } },
+  bindings: {
+    player: { kind: 'player', label: 'Pick a player', required: true },
+    rating: { kind: 'text', label: 'Your rating (out of 10)', default: '8.5', maxLength: 4 },
+  },
+  scenes: [
+    {
+      id: 'card',
+      durationMs: 0,
+      transition: 'pop',
+      components: [
+        {
+          id: 'card',
+          type: 'ratingCard',
+          layout: { x: 0.05, y: 0.085, w: 0.9, h: 0.8 },
+          data: { player: { binding: 'player' }, rating: { binding: 'rating' } },
+          anim: { style: 'pop-in' },
+        },
+      ],
+    },
+  ],
+  remix: {
+    remixSlots: ['player', 'rating'],
+    captionTemplate: 'My post-match rating 🔥 agree? {{credit}} {{hashtag}}',
+    publishable: true,
+  },
+};
+
 // Player Card leads — it's the production hero for the demo.
-export const SEED_TEMPLATES: Template[] = [PLAYER_CARD, BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];
+export const SEED_TEMPLATES: Template[] = [PLAYER_CARD, POST_MATCH_RATING, BUILD_YOUR_XI, WONDERKID_COUNTDOWN, TIER_LIST, STAT_DROP, HEAD_TO_HEAD];
