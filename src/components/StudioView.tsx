@@ -23,6 +23,7 @@ import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, captureNodeToDataUrl, slugify } from '../templates/engine/exportImage';
 import { exportNodeToVideo, exportReelToVideo } from '../templates/engine/exportVideoClient';
+import { prefetchWikiPhotos } from '../templates/engine/wikiPhoto';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
@@ -97,7 +98,13 @@ export default function StudioView() {
 
   // All U17 players for the pickers (live, with sample fallback).
   const [players, setPlayers] = useState<PlayerRecord[]>([]);
+  const [, setPhotoTick] = useState(0);   // bump when wiki photos arrive → re-render cards
   useEffect(() => { getPlayers().then(setPlayers); }, []);
+  useEffect(() => {
+    if (!players.length) return;
+    prefetchWikiPhotos(players.map(p => ({ name: p.player_name, wiki: (p as { wiki?: string }).wiki })))
+      .then(() => setPhotoTick(t => t + 1));
+  }, [players]);
 
   // Seed each lineup with the auto top-11 so the picker and pitch agree (unless a
   // remix link already prefilled it). The creator edits slots from there.

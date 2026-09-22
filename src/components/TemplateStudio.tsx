@@ -19,6 +19,7 @@ import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
 import { exportNodeToVideo } from '../templates/engine/exportVideoClient';
+import { prefetchWikiPhotos } from '../templates/engine/wikiPhoto';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
 
@@ -53,7 +54,13 @@ export default function TemplateStudio() {
     return () => { alive = false; };
   }, [selections]);
 
+  const [, setPhotoTick] = useState(0);
   useEffect(() => { getPlayers().then(setPlayers); }, []);
+  useEffect(() => {
+    if (!players.length) return;
+    prefetchWikiPhotos(players.map(p => ({ name: p.player_name, wiki: (p as { wiki?: string }).wiki })))
+      .then(() => setPhotoTick(t => t + 1));
+  }, [players]);
 
   const metricBindings = useMemo(() => Object.entries(template.bindings).filter(([, b]) => b.kind === 'metric') as [string, MetricBinding][], [template]);
   const textBindings = useMemo(() => Object.entries(template.bindings).filter(([, b]) => b.kind === 'text') as [string, TextBinding][], [template]);

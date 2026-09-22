@@ -53,6 +53,8 @@ export const TEAM_COLORS: Record<string, string> = {
   NIGERIA: '#008751', COLOMBIA: '#FCD116', MEXICO: '#006847', POLAND: '#DC143C',
   ZAMBIA: '#198A00', KENYA: '#006600', ECUADOR: '#FFDD00',
   'NEW ZEALAND': '#00247D', 'DOMINICAN REPUBLIC': '#002D62',
+  AUSTRALIA: '#00843D', NORWAY: '#BA0C2F', FRANCE: '#0055A4', SWEDEN: '#006AA7',
+  JAMAICA: '#009B3A', GERMANY: '#111111', NETHERLANDS: '#AE1C28', CANADA: '#FF0000',
 };
 
 // ── Resolve a BindingRef against already-resolved values ──────────────────────

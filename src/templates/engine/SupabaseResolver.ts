@@ -16,10 +16,17 @@ import {
   type PlayerRecord, type RankEntry, type MetricInfo,
   METRIC_LABELS, TEAM_COLORS, SAMPLE_PLAYERS,
 } from './resolver';
+import { FLAGSHIP_PLAYERS } from './flagshipPlayers';
+
+// Demo runs on the senior-pro flagship pool (recognizable names + real photos).
+// Flip to false to go back to the live U17 data.
+const DEMO_FLAGSHIP = true;
+const fnum = (p: PlayerRecord, k: string) => { const v = p[k]; return typeof v === 'number' ? v : Number(v) || 0; };
 
 /** All U17 players for the Studio pickers. Falls back to the sample set if the
  *  query fails (e.g. before the publishable key is set). */
 export async function getPlayers(): Promise<PlayerRecord[]> {
+  if (DEMO_FLAGSHIP) return FLAGSHIP_PLAYERS;
   try {
     // Race the query against a timeout so an unreachable/misconfigured Supabase
     // (offline, no publishable key) falls back to the sample pool instead of
@@ -81,6 +88,7 @@ export class SupabaseResolver implements DataResolver {
   }
 
   private async player(id?: number): Promise<PlayerRecord | null> {
+    if (DEMO_FLAGSHIP) return FLAGSHIP_PLAYERS.find(p => p.player_id === id) ?? FLAGSHIP_PLAYERS[0];
     if (id == null) return SAMPLE_PLAYERS[0] ?? null;
     try {
       const { data, error } = await supabase.from(STATS).select('*').eq('player_id', id).limit(1);
@@ -94,6 +102,11 @@ export class SupabaseResolver implements DataResolver {
   }
 
   private async lineup(ids?: number[]): Promise<PlayerRecord[]> {
+    if (DEMO_FLAGSHIP) {
+      const byId = new Map(FLAGSHIP_PLAYERS.map(p => [p.player_id, p]));
+      if (ids && ids.some(Boolean)) return ids.map(i => byId.get(i) ?? null) as unknown as PlayerRecord[];
+      return [...FLAGSHIP_PLAYERS].sort((a, b) => fnum(b, 'line_breaks') - fnum(a, 'line_breaks')).slice(0, 11);
+    }
     if (ids && ids.some(Boolean)) {
       const { data, error } = await supabase.from(STATS).select('*').in('player_id', ids.filter(Boolean));
       if (error) throw new Error(error.message);
@@ -108,6 +121,10 @@ export class SupabaseResolver implements DataResolver {
   }
 
   private async leaderboard(metric: MetricKey, limit: number, order: 'asc' | 'desc'): Promise<RankEntry[]> {
+    if (DEMO_FLAGSHIP) {
+      const sorted = [...FLAGSHIP_PLAYERS].sort((a, b) => order === 'asc' ? fnum(a, metric) - fnum(b, metric) : fnum(b, metric) - fnum(a, metric));
+      return sorted.slice(0, limit).map((p, i): RankEntry => ({ rank: i + 1, player_id: p.player_id, player_name: p.player_name, team: p.team, value: fnum(p, metric) }));
+    }
     const { data, error } = await supabase.from(BOARDS).select('rank,player_id,player_name,team,value').eq('metric', metric).order('rank').limit(limit);
     if (error) throw new Error(error.message);
     if (data && data.length) return data.map((r): RankEntry => ({ rank: r.rank, player_id: r.player_id, player_name: r.player_name, team: r.team, value: r.value }));

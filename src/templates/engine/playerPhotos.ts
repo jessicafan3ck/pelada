@@ -24,9 +24,14 @@ export const PLAYER_PHOTOS: Record<string, string> = {
 };
 
 /** Look up an official photo by player name or id; null → card uses the kit+flag hero. */
+import { wikiPhotoCached } from './wikiPhoto';
+
 export function photoFor(name?: string, id?: number): string | null {
   if (name && PLAYER_PHOTOS[name.trim().toLowerCase()]) return PLAYER_PHOTOS[name.trim().toLowerCase()];
   if (id != null && PLAYER_PHOTOS[String(id)]) return PLAYER_PHOTOS[String(id)];
+  // Fall through to a Wikipedia portrait pulled for the flagship pool (demo).
+  const w = wikiPhotoCached(name);
+  if (w) return w;
   return null;
 }
 

@@ -193,7 +193,7 @@ const FLAGS: Record<string, string> = {
   'KOREA DPR': '🇰🇵', 'NORTH KOREA': '🇰🇵', NIGERIA: '🇳🇬', COLOMBIA: '🇨🇴', POLAND: '🇵🇱',
   GERMANY: '🇩🇪', FRANCE: '🇫🇷', NETHERLANDS: '🇳🇱', ITALY: '🇮🇹', MEXICO: '🇲🇽', CANADA: '🇨🇦',
   AUSTRALIA: '🇦🇺', SWEDEN: '🇸🇪', NORWAY: '🇳🇴', ZAMBIA: '🇿🇲', MOROCCO: '🇲🇦', ECUADOR: '🇪🇨',
-  KENYA: '🇰🇪', PARAGUAY: '🇵🇾', 'NEW ZEALAND': '🇳🇿', 'IVORY COAST': '🇨🇮', PORTUGAL: '🇵🇹',
+  KENYA: '🇰🇪', PARAGUAY: '🇵🇾', 'NEW ZEALAND': '🇳🇿', 'IVORY COAST': '🇨🇮', PORTUGAL: '🇵🇹', JAMAICA: '🇯🇲',
 };
 const flagFor = (team?: string) => FLAGS[(team ?? '').toUpperCase()] ?? '🏳️';
 
