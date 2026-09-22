@@ -327,7 +327,7 @@ export const PLAYER_CARD: Template = {
         {
           id: 'card',
           type: 'playerCard',
-          layout: { x: 0.05, y: 0.085, w: 0.9, h: 0.8 },
+          layout: { x: 0, y: 0, w: 1, h: 1 },
           data: { player: { binding: 'player' } },
           anim: { style: 'pop-in' },
         },
@@ -370,7 +370,7 @@ export const POST_MATCH_RATING: Template = {
         {
           id: 'card',
           type: 'ratingCard',
-          layout: { x: 0.05, y: 0.085, w: 0.9, h: 0.8 },
+          layout: { x: 0, y: 0, w: 1, h: 1 },
           data: { player: { binding: 'player' }, rating: { binding: 'rating' } },
           anim: { style: 'pop-in' },
         },
@@ -418,7 +418,7 @@ export const MEET_HER: Template = {
         {
           id: 'card',
           type: 'meetCard',
-          layout: { x: 0.05, y: 0.085, w: 0.9, h: 0.8 },
+          layout: { x: 0, y: 0, w: 1, h: 1 },
           data: { player: { binding: 'player' }, metric: { binding: 'metric' } },
           anim: { style: 'pop-in' },
         },

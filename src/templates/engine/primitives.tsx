@@ -218,6 +218,18 @@ function Jersey({ color, number, size }: { color: string; number: string; size: 
   );
 }
 
+// Full-bleed portrait backdrop: the photo edge-to-edge + scrims so the locked
+// sponsor lockup (top) and the name/stats/footer (bottom) stay readable.
+function PhotoBackdrop({ photo, flag }: { photo: string; flag: string }) {
+  return (
+    <>
+      <img src={photo} crossOrigin="anonymous" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 18%, transparent 40%, rgba(5,5,7,0.74) 66%, rgba(5,5,7,0.98) 100%)' }} />
+      <div style={{ position: 'absolute', top: 120, left: 44, fontSize: 84, lineHeight: 1, filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.6))' }}>{flag}</div>
+    </>
+  );
+}
+
 export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerRecord }) {
   const p = (player ?? {}) as PlayerRecord;
   const stat = (k: string) => { const v = (p as unknown as Record<string, unknown>)[k]; return typeof v === 'number' ? v : Number(v) || 0; };
@@ -227,29 +239,42 @@ export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerReco
   const teamColor = TEAM_COLORS[team] ?? accent;
   const number = p.shirt_number != null ? String(p.shirt_number) : '';
   const photo = photoFor(name, p.player_id);
-  // Raw counts only — clear labels, no derived/composite numbers.
   const STATS: [string, string][] = [
     ['Line Breaks', 'line_breaks'], ['Goals', 'goals'], ['Passes', 'passes_complete'], ['Pressings', 'pressings'],
   ];
-  return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-      {/* team-colour glow */}
-      <div style={{ position: 'absolute', top: '6%', width: '78%', height: '46%', background: `radial-gradient(circle, ${teamColor}66, transparent 70%)`, filter: 'blur(60px)', pointerEvents: 'none' }} />
 
-      {/* PHOTO SLOT — official portrait drops in; kit+flag is the placeholder */}
-      <div style={{ position: 'relative', width: 600, height: 680, borderRadius: 36, overflow: 'hidden', marginTop: 8, border: `4px solid ${teamColor}`, boxShadow: `0 30px 70px ${teamColor}55`, background: `radial-gradient(circle at 50% 32%, ${teamColor}44, #07070c 72%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {photo
-          ? <img src={photo} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <Jersey color={teamColor} number={number} size={460} />}
-        <div style={{ position: 'absolute', top: 18, left: 20, fontSize: 68, lineHeight: 1 }}>{flagFor(team)}</div>
-        {!photo && <div style={{ position: 'absolute', bottom: 16, right: 20, fontSize: 14, fontWeight: 700, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.26)', textTransform: 'uppercase' }}>Official photo slot</div>}
+  // ── Hero-portrait layout (real photo) ──
+  if (photo) {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#050505' }}>
+        <PhotoBackdrop photo={photo} flag={flagFor(team)} />
+        {/* name + stats anchored to the bottom, clearing the engine footer zone */}
+        <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: teamColor, textTransform: 'uppercase', letterSpacing: '0.1em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+            {team}{p.position ? `  ·  ${p.position}` : ''}{number ? `  ·  #${number}` : ''}
+          </div>
+          <div style={{ fontSize: 118, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.88, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
+          <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 20, overflow: 'hidden' }}>
+            {STATS.map(([label, key]) => (
+              <div key={key} style={{ background: 'rgba(8,8,14,0.82)', padding: '18px 6px', textAlign: 'center' }}>
+                <div style={{ fontSize: 50, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{stat(key)}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.03em', marginTop: 5 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      {/* name (one line) + nation/position (small) */}
-      <div style={{ marginTop: 6, fontSize: 88, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, textAlign: 'center', textShadow: `0 4px 24px ${teamColor}99` }}>{surname}</div>
+  // ── Kit fallback (no photo) ──
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', padding: '40px 40px 130px' }}>
+      <div style={{ position: 'absolute', top: '10%', width: '78%', height: '46%', background: `radial-gradient(circle, ${teamColor}66, transparent 70%)`, filter: 'blur(60px)', pointerEvents: 'none' }} />
+      <div style={{ fontSize: 120, lineHeight: 1, marginTop: 60 }}>{flagFor(team)}</div>
+      <div style={{ marginTop: -6 }}><Jersey color={teamColor} number={number} size={520} /></div>
+      <div style={{ marginTop: 8, fontSize: 96, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, textAlign: 'center', textShadow: `0 4px 24px ${teamColor}99` }}>{surname}</div>
       <div style={{ marginTop: 10, fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{team}{p.position ? ` · ${p.position}` : ''}</div>
-
-      {/* raw stat strip — anchored to the bottom */}
       <div style={{ marginTop: 'auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 22, overflow: 'hidden' }}>
         {STATS.map(([label, key]) => (
           <div key={key} style={{ background: '#0b0b12', padding: '24px 6px', textAlign: 'center' }}>
@@ -271,11 +296,36 @@ export function RatingCard({ player, rating, accent }: BaseProps & { player?: Pl
   const team = (p.team ?? '').toUpperCase();
   const teamColor = TEAM_COLORS[team] ?? accent;
   const number = p.shirt_number != null ? String(p.shirt_number) : '';
+  const photo = photoFor(name, p.player_id);
   const STATS: [string, string][] = [
     ['Line Breaks', 'line_breaks'], ['Goals', 'goals'], ['Passes', 'passes_complete'], ['Pressings', 'pressings'],
   ];
+
+  // ── Hero-portrait layout (real photo) ──
+  if (photo) {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#050505' }}>
+        <PhotoBackdrop photo={photo} flag={flagFor(team)} />
+        <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{team}{p.position ? `  ·  ${p.position}` : ''}</div>
+          <div style={{ fontSize: 84, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', gap: 18 }}>
+            <div style={{ fontSize: 200, fontWeight: 900, color: accent, lineHeight: 0.8, textShadow: `0 6px 34px ${accent}77` }}>{rating || '–'}</div>
+            <div style={{ paddingBottom: 26 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: accent, letterSpacing: '0.16em', textTransform: 'uppercase' }}>My Rating</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Out of 10</div>
+            </div>
+          </div>
+          <div style={{ marginTop: 14, display: 'flex', gap: 26, fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>
+            {STATS.map(([label, key]) => <span key={key}><span style={{ color: '#fff', fontWeight: 900 }}>{stat(key)}</span> {label}</span>)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', padding: '30px 40px 140px' }}>
       <div style={{ position: 'absolute', top: '18%', width: '80%', height: '44%', background: `radial-gradient(circle, ${accent}55, transparent 70%)`, filter: 'blur(70px)', pointerEvents: 'none' }} />
 
       {/* identity: flag + kit + name (compact) */}
@@ -323,8 +373,31 @@ export function MeetCard({ player, metric, accent }: BaseProps & { player?: Play
   const metricKey = metric?.key ?? 'line_breaks';
   const metricLabel = metric?.label ?? METRIC_LABELS[metricKey] ?? 'Line Breaks';
   const factLine = facts ? [facts.age ? `${facts.age} yrs` : '', facts.club, facts.from].filter(Boolean).join('  ·  ') : '';
+  const photo = photoFor(name, p.player_id);
+
+  // ── Hero-portrait layout (real photo) — name over the face ──
+  if (photo) {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#050505' }}>
+        <PhotoBackdrop photo={photo} flag={flagFor(team)} />
+        <div style={{ position: 'absolute', top: 120, right: 44, fontSize: 22, fontWeight: 800, letterSpacing: '0.24em', color: accent, textTransform: 'uppercase', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>Know Her Name</div>
+        <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
+          {first && <div style={{ fontSize: 44, fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{first}</div>}
+          <div style={{ fontSize: 132, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.86, textShadow: '0 6px 30px rgba(0,0,0,0.75)' }}>{surname}</div>
+          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {team}{p.position ? `  ·  ${p.position}` : ''}{factLine ? `  ·  ${factLine}` : ''}
+          </div>
+          <div style={{ marginTop: 18, display: 'inline-flex', alignItems: 'center', gap: 16, background: 'rgba(8,8,14,0.7)', border: `1px solid ${accent}66`, borderRadius: 18, padding: '14px 24px' }}>
+            <span style={{ fontSize: 76, fontWeight: 900, color: accent, lineHeight: 0.8 }}>{num(metricKey)}</span>
+            <span style={{ fontSize: 26, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{metricLabel}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', padding: '30px 40px 140px' }}>
       <div style={{ position: 'absolute', top: '4%', width: '80%', height: '40%', background: `radial-gradient(circle, ${teamColor}55, transparent 70%)`, filter: 'blur(70px)', pointerEvents: 'none' }} />
 
       <div style={{ marginTop: 6, fontSize: 24, fontWeight: 800, letterSpacing: '0.28em', color: accent, textTransform: 'uppercase' }}>Know Her Name</div>
