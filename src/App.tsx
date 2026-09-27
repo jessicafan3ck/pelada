@@ -130,7 +130,7 @@ function AppShell() {
             {isSidebarOpen && (
               <div className="flex flex-col">
                 <span style={{ fontWeight: 900, fontSize: '15px', textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#fff', lineHeight: 1 }}>PELADA.</span>
-                <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>Analytics OS</span>
+                <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>Creator Studio</span>
               </div>
             )}
           </div>

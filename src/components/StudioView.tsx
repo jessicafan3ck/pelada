@@ -24,6 +24,7 @@ import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, captureNodeToDataUrl, slugify } from '../templates/engine/exportImage';
 import { exportNodeToVideo, exportReelToVideo } from '../templates/engine/exportVideoClient';
 import { prefetchWikiPhotos } from '../templates/engine/wikiPhoto';
+import { FLAGSHIP_PLAYERS } from '../templates/engine/flagshipPlayers';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
@@ -45,6 +46,57 @@ function parseRemix() {
 }
 const REMIX = parseRemix();
 
+// Creator-tool convention (see TikTok's Create screen): you pick a template by
+// LOOKING at it, not by reading a tagline. Each tile is a live mini render.
+const TEMPLATE_TABS = [
+  { id: 'all', label: 'For You' },
+  { id: 'reveal', label: 'Cards' },
+  { id: 'ranking', label: 'Rankings' },
+  { id: 'selection', label: 'Line-ups' },
+  { id: 'comparison', label: 'Compare' },
+] as const;
+type TemplateTab = typeof TEMPLATE_TABS[number]['id'];
+
+// Placeholder social proof for the demo — swap for real counts once live.
+const TEMPLATE_USES: Record<string, string> = {
+  'player-card': '18.4K', 'meet-her': '12.1K', 'post-match-rating': '9.6K',
+  'build-your-xi': '24.3K', 'wonderkid-countdown': '15.8K', 'tier-list': '21.2K',
+  'stat-drop': '7.9K', 'head-to-head': '11.4K',
+};
+
+function TemplateTile({ template, active, onPick }: { template: Template; active: boolean; onPick: () => void }) {
+  const [resolved, setResolved] = useState<ResolvedBindings>({});
+  useEffect(() => {
+    let alive = true;
+    // Seed DISTINCT players per player-binding so comparison thumbnails don't
+    // render the same face twice.
+    const sel: Record<string, unknown> = {};
+    let i = 0;
+    Object.entries(template.bindings).forEach(([id, b]) => {
+      if (b.kind === 'player') { sel[id] = FLAGSHIP_PLAYERS[i]?.player_id; i += 1; }
+    });
+    supabaseResolver.resolve(template, sel)
+      .then(r => { if (alive) setResolved(r); })
+      .catch(() => mockResolver.resolve(template, sel).then(r => { if (alive) setResolved(r); }));
+    return () => { alive = false; };
+  }, [template]);
+  const clips = template.scenes.length;
+  return (
+    <button onClick={onPick} className="text-left group w-[150px] shrink-0 overflow-hidden">
+      <div className={`relative rounded-[18px] overflow-hidden transition-all ${active ? 'ring-[3px] ring-yellow-400' : 'ring-1 ring-white/10 group-hover:ring-white/35'}`}>
+        <TemplatePreview template={template} resolved={resolved} sceneIndex={0} creatorHandle="@you" width={150} />
+        {clips > 1 && (
+          <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 backdrop-blur text-[9px] font-bold text-white">{clips} clips</div>
+        )}
+      </div>
+      <div className="pt-2" style={{ width: 150, overflow: 'hidden' }}>
+        <div style={{ width: 150 }} className="text-[12px] font-bold text-white truncate">{template.meta.name}</div>
+        <div style={{ width: 150 }} className="text-[10px] text-zinc-500 truncate">{TEMPLATE_USES[template.id] ?? '5.2K'} used · {clips} clip{clips > 1 ? 's' : ''}</div>
+      </div>
+    </button>
+  );
+}
+
 export default function StudioView() {
   const [template, setTemplate] = useState<Template>(REMIX.template);
   const [selections, setSelections] = useState<Record<string, unknown>>(REMIX.selections);
@@ -60,6 +112,7 @@ export default function StudioView() {
   // Generate mode: Templates (the 5 data-backed cards) vs Sandbox (freeform
   // AI-generated widget rendered live in the ReactRunner — for testing looks).
   const [genMode, setGenMode] = useState<'template' | 'sandbox'>('template');
+  const [templateTab, setTemplateTab] = useState<TemplateTab>('all');
   const [widgetCode, setWidgetCode] = useState<string | null>(null);
   const [widgetError, setWidgetError] = useState<string | null>(null);
 
@@ -322,7 +375,7 @@ export default function StudioView() {
         <div className="p-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20"><Boxes className="w-5 h-5 text-yellow-400" /></div>
         <div>
           <h1 className="text-xl font-black text-white">Studio</h1>
-          <p className="text-xs text-zinc-500">Pick a template, plug in U17 data, deploy. <span className="text-green-500/70">Live FIFA U17 data.</span></p>
+          <p className="text-xs text-zinc-500">Describe it or pick a template — make it yours, then post. <span className="text-green-500/70">Backed by real FIFA data.</span></p>
         </div>
       </div>
 
@@ -481,18 +534,25 @@ export default function StudioView() {
 
       {/* Template gallery + editor (Templates mode only) */}
       {genMode === 'template' && (<>
-      <div className="flex gap-3 flex-wrap">
-        {SEED_TEMPLATES.map(t => (
-          <button
-            key={t.id}
-            onClick={() => pickTemplate(t)}
-            className={`text-left px-4 py-3 rounded-2xl border transition-all w-64 ${template.id === t.id ? 'bg-white/8 border-yellow-500/40' : 'bg-white/[0.02] border-white/8 hover:border-white/20'}`}
-          >
-            <div className="text-sm font-bold text-white">{t.meta.name}</div>
-            <div className="text-[11px] text-zinc-500 mt-0.5 leading-snug">{t.meta.tagline}</div>
-            <div className="text-[10px] uppercase tracking-widest text-yellow-500/60 mt-2">{t.meta.category}</div>
-          </button>
-        ))}
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-base font-black text-white">Templates</span>
+          <div className="ml-auto flex gap-1.5 overflow-x-auto">
+            {TEMPLATE_TABS.map(tab => (
+              <button key={tab.id} onClick={() => setTemplateTab(tab.id)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${templateTab === tab.id ? 'bg-white text-black' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-3.5 flex-wrap">
+          {SEED_TEMPLATES
+            .filter(t => templateTab === 'all' || t.meta.category === templateTab)
+            .map(t => (
+              <TemplateTile key={t.id} template={t} active={template.id === t.id} onPick={() => pickTemplate(t)} />
+            ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 items-start">
