@@ -11,7 +11,8 @@
  * caption + deep-link.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck, ExternalLink, Clapperboard, Plus, X } from 'lucide-react';
+import { Boxes, Download, Film, Sparkles, ChevronLeft, ChevronRight, Check, Copy, GitBranch, Wand2, ShieldCheck, ExternalLink, Clapperboard, Plus, X, Instagram } from 'lucide-react';
+import { openTikTok, openInstagramStory } from '../utils/social';
 import { SEED_TEMPLATES, MEET_HER } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
@@ -498,9 +499,16 @@ export default function StudioView() {
                   <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
                     {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
                   </button>
-                  <button onClick={() => window.open('https://www.tiktok.com/upload', '_blank')} className="mt-2 w-full py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
-                    <ExternalLink className="w-3.5 h-3.5" /> Open TikTok
-                  </button>
+                  <div className="mt-2 flex gap-2">
+                    <button onClick={openTikTok} className="flex-1 py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
+                      <ExternalLink className="w-3.5 h-3.5" /> TikTok
+                    </button>
+                    <button onClick={openInstagramStory}
+                      style={{ background: 'linear-gradient(90deg,#F58529,#DD2A7B,#8134AF,#515BD4)' }}
+                      className="flex-1 py-2.5 rounded-lg text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
+                      <Instagram className="w-3.5 h-3.5" /> IG Story
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -662,7 +670,7 @@ export default function StudioView() {
           {/* Export result — download done, now the per-platform deploy recipe */}
           {exportResult && (
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.05] p-4 space-y-3">
-              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved — ready for TikTok</div>
+              <div className="flex items-center gap-2 text-green-400 text-xs font-bold"><Check className="w-4 h-4" /> Saved — ready to post</div>
 
               {/* platform tabs */}
               <div className="flex gap-2">
@@ -678,33 +686,38 @@ export default function StudioView() {
               <ol className="text-[11px] text-zinc-400 space-y-1 list-decimal pl-4">
                 {platform === 'tiktok' ? (
                   <>
-                    <li>Open TikTok → <span className="text-zinc-200 font-semibold">＋</span> → <span className="text-zinc-200 font-semibold">Upload</span> and pick this card from your Camera Roll.</li>
+                    <li>Open TikTok → <span className="text-zinc-200 font-semibold">＋</span> → <span className="text-zinc-200 font-semibold">Upload</span> and pick this from your Camera Roll.</li>
                     <li>Tap <span className="text-zinc-200 font-semibold">Save as draft</span> — it's ready to post anytime.</li>
                     <li>Paste the caption; drop the remix link in a pinned comment.</li>
                   </>
                 ) : (
                   <>
-                    <li>Add the downloaded PNG to your Story.</li>
-                    <li>Add a <span className="text-zinc-200 font-semibold">Link sticker</span> with the remix URL below.</li>
+                    <li>Open Instagram → <span className="text-zinc-200 font-semibold">Your Story</span> and pick this from your Camera Roll.</li>
+                    <li>Add a <span className="text-zinc-200 font-semibold">Link sticker</span> with the remix link below.</li>
+                    <li>Drop the caption in as a text sticker so the credit shows.</li>
                   </>
                 )}
               </ol>
 
-              {platform === 'tiktok' && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Caption</p>
-                  <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
-                  <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
-                    {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
-                  </button>
-                  <button
-                    onClick={() => window.open('https://www.tiktok.com/upload', '_blank')}
-                    className="mt-2 w-full py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all"
-                  >
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Caption</p>
+                <p className="text-xs text-zinc-300 leading-relaxed">{exportResult.caption}</p>
+                <button onClick={() => copy(exportResult.caption, 'caption')} className="mt-1.5 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300">
+                  {copied === 'caption' ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy caption</>}
+                </button>
+                {platform === 'tiktok' ? (
+                  <button onClick={openTikTok}
+                    className="mt-2 w-full py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
                     <ExternalLink className="w-3.5 h-3.5" /> Open TikTok
                   </button>
-                </div>
-              )}
+                ) : (
+                  <button onClick={openInstagramStory}
+                    style={{ background: 'linear-gradient(90deg,#F58529,#DD2A7B,#8134AF,#515BD4)' }}
+                    className="mt-2 w-full py-2.5 rounded-lg text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
+                    <Instagram className="w-3.5 h-3.5" /> Open Instagram Story
+                  </button>
+                )}
+              </div>
 
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Remix link <span className="text-zinc-600">· prefills this exact template</span></p>

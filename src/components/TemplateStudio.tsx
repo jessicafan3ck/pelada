@@ -10,7 +10,8 @@
  * the output is identical — this is just a stripped, fan-facing shell.
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Download, Film, Check, Copy, GitBranch, ExternalLink, ArrowUpRight } from 'lucide-react';
+import { Download, Film, Check, Copy, GitBranch, ExternalLink, ArrowUpRight, Instagram } from 'lucide-react';
+import { openTikTok, openInstagramStory } from '../utils/social';
 import { SEED_TEMPLATES } from '../templates/examples';
 import type { Template, MetricBinding, TextBinding, LineupBinding, PlayerBinding } from '../templates/spec';
 import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord } from '../templates/engine/resolver';
@@ -192,7 +193,16 @@ export default function TemplateStudio() {
             <div className="flex items-center gap-2">
               <button onClick={copyLink} className="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-white">{copied ? <><Check className="w-3 h-3 text-green-400" /> Link copied</> : <><Copy className="w-3 h-3" /> Copy remix link</>}</button>
             </div>
-            <button onClick={() => window.open('https://www.tiktok.com/upload', '_blank')} className="w-full py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5"><ExternalLink className="w-3.5 h-3.5" /> Open TikTok</button>
+            <div className="flex gap-2">
+              <button onClick={openTikTok} className="flex-1 py-2.5 rounded-lg bg-[#FE2C55] text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
+                <ExternalLink className="w-3.5 h-3.5" /> TikTok
+              </button>
+              <button onClick={openInstagramStory}
+                style={{ background: 'linear-gradient(90deg,#F58529,#DD2A7B,#8134AF,#515BD4)' }}
+                className="flex-1 py-2.5 rounded-lg text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all">
+                <Instagram className="w-3.5 h-3.5" /> IG Story
+              </button>
+            </div>
           </div>
         )}
       </div>
