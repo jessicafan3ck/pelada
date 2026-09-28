@@ -55,7 +55,19 @@ const INITIAL_WORKSPACE: Workspace = VIEW_WORKSPACE[INITIAL_VIEW] ?? 'Creative';
 function AppShell() {
   const [currentView, setCurrentView] = useState<ViewType>(INITIAL_VIEW);
   const [workspace, setWorkspace] = useState<Workspace>(INITIAL_WORKSPACE);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // NOTE: this project has no Tailwind JIT — index.css is a static prebuilt
+  // file, so responsive utility classes that aren't already in it do nothing.
+  // The mobile shell is therefore driven by a JS media query + inline styles.
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const onChange = () => setIsMobile(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  // Open by default on desktop; closed (off-canvas drawer) on phones.
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 1024);
   const { copilotQuery } = useAppContext();
 
   useEffect(() => {
@@ -115,8 +127,24 @@ function AppShell() {
         <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] bg-pink-500/10 blur-[80px] rounded-full mix-blend-screen" />
       </div>
 
-      {/* Sidebar */}
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] z-20 shadow-[8px_0_32px_0_rgba(0,0,0,0.5)] shrink-0`}>
+      {/* Mobile backdrop — tap to close the drawer */}
+      {isMobile && isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }}
+        />
+      )}
+
+      {/* Sidebar — off-canvas drawer on mobile, inline rail/panel on desktop */}
+      <aside
+        style={isMobile
+          ? {
+              position: 'fixed', top: 0, bottom: 0, left: 0, width: 256, zIndex: 40,
+              transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+              transition: 'transform 300ms cubic-bezier(0.25,0.1,0.25,1)',
+            }
+          : { width: isSidebarOpen ? 256 : 80, transition: 'width 300ms cubic-bezier(0.25,0.1,0.25,1)' }}
+        className="bg-black/80 backdrop-blur-2xl border-r border-white/5 flex flex-col shrink-0 shadow-[8px_0_32px_0_rgba(0,0,0,0.5)]">
         {/* Logo */}
         <div className="h-20 flex items-center px-6 border-b border-white/5 relative overflow-hidden shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
@@ -150,7 +178,7 @@ function AppShell() {
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => { setCurrentView(item.id); if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden ${
                   isActive ? 'text-white' : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
@@ -213,7 +241,7 @@ function AppShell() {
         </header>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 custom-scrollbar">
+        <div style={{ padding: isMobile ? 16 : 32 }} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {renderView()}
           </div>

@@ -26,6 +26,7 @@ import { exportNodeToImage, captureNodeToDataUrl, slugify } from '../templates/e
 import { exportNodeToVideo, exportReelToVideo } from '../templates/engine/exportVideoClient';
 import { prefetchWikiPhotos } from '../templates/engine/wikiPhoto';
 import { FLAGSHIP_PLAYERS } from '../templates/engine/flagshipPlayers';
+import { usePreviewWidth } from '../utils/usePreviewWidth';
 import { attributionBill } from '../attribution/model';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
@@ -114,6 +115,7 @@ export default function StudioView() {
   // AI-generated widget rendered live in the ReactRunner — for testing looks).
   const [genMode, setGenMode] = useState<'template' | 'sandbox'>('template');
   const [templateTab, setTemplateTab] = useState<TemplateTab>('all');
+  const previewW = usePreviewWidth(360);
   const [widgetCode, setWidgetCode] = useState<string | null>(null);
   const [widgetError, setWidgetError] = useState<string | null>(null);
 
@@ -523,7 +525,7 @@ export default function StudioView() {
                 </div>
               </div>
             ) : (
-              <div className="w-[360px] h-[640px] flex items-center justify-center text-center text-zinc-600 text-sm border border-dashed border-white/10 rounded-2xl px-6">
+              <div style={{ width: previewW, height: Math.round(previewW*16/9) }} className="flex items-center justify-center text-center text-zinc-600 text-sm border border-dashed border-white/10 rounded-2xl px-6">
                 Describe a chart above, then Generate — your branded card renders here, ready to export.
               </div>
             )}
@@ -533,7 +535,7 @@ export default function StudioView() {
 
       {/* Offscreen full-res sandbox card — what the exporter captures. */}
       {genMode === 'sandbox' && widgetCode && (
-        <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+        <div aria-hidden style={{ position: 'fixed', left: 0, top: 0, transform: 'translateX(-4000px)', pointerEvents: 'none' }}>
           <div ref={sandboxExportRef} style={{ width: 1080, height: 1920 }}>
             <SandboxCard code={widgetCode} title={sandboxTitle} creatorHandle={CREATOR_HANDLE} />
           </div>
@@ -735,11 +737,11 @@ export default function StudioView() {
         {/* Live 9:16 preview */}
         <div className="flex flex-col items-center gap-3 mx-auto">
           <div key={justDrafted} className={justDrafted ? 'pelada-reveal' : ''}>
-            <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle="@you" width={360} />
+            <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle="@you" width={previewW} />
           </div>
 
           {/* Attribution — one reputation system across creators + technicals */}
-          <div className="w-[360px] rounded-xl border border-pink-500/15 bg-pink-500/[0.04] p-3.5">
+          <div style={{ width: previewW }} className="rounded-xl border border-pink-500/15 bg-pink-500/[0.04] p-3.5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-pink-500/60 mb-2">Attribution · travels with every remix</p>
             <p className="text-xs text-zinc-300">
               Template <span className="text-white font-semibold">{bill.primary.name}</span> by <span className="text-pink-300">@you</span>
@@ -802,7 +804,7 @@ export default function StudioView() {
       )}
 
       {/* Offscreen Meet-the-XI render — captured once per player for the reel */}
-      <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+      <div aria-hidden style={{ position: 'fixed', left: 0, top: 0, transform: 'translateX(-4000px)', pointerEvents: 'none' }}>
         <div ref={meetRef} style={{ width: 1080, height: 1920 }}>
           <TemplateRenderer template={MEET_HER} resolved={meetResolved} sceneIndex={0} creatorHandle={CREATOR_HANDLE} />
         </div>
@@ -810,7 +812,7 @@ export default function StudioView() {
 
       {/* Offscreen full-resolution (1080×1920) render — what the exporter captures.
           Kept at true size so the PNG is share-ready, not the scaled preview. */}
-      <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+      <div aria-hidden style={{ position: 'fixed', left: 0, top: 0, transform: 'translateX(-4000px)', pointerEvents: 'none' }}>
         {/* ref is on the INNER node (no offset) — html-to-image bakes the captured
             node's own position into the render, so a -99999 offset here would push
             all content off-canvas and export a blank white image. */}

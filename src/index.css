@@ -5533,3 +5533,7 @@ html {
 .pelada-reveal {
   animation: peladaReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* Mobile: nothing may widen the document. The 1080×1920 offscreen export nodes
+   and long unbroken URLs would otherwise create horizontal scroll on a phone. */
+html, body { overflow-x: hidden; max-width: 100%; }

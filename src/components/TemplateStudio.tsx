@@ -21,6 +21,7 @@ import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
 import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
 import { exportNodeToVideo } from '../templates/engine/exportVideoClient';
 import { prefetchWikiPhotos } from '../templates/engine/wikiPhoto';
+import { usePreviewWidth } from '../utils/usePreviewWidth';
 import LineupPicker from './studio/LineupPicker';
 import PlayerPicker from './studio/PlayerPicker';
 
@@ -56,6 +57,7 @@ export default function TemplateStudio() {
   }, [selections]);
 
   const [, setPhotoTick] = useState(0);
+  const previewW = usePreviewWidth(340, 40);
   useEffect(() => { getPlayers().then(setPlayers); }, []);
   useEffect(() => {
     if (!players.length) return;
@@ -113,7 +115,7 @@ export default function TemplateStudio() {
   const copyLink = () => { navigator.clipboard.writeText(remixLink); setCopied(true); setTimeout(() => setCopied(false), 2000); };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#e4e4e7' }} className="flex flex-col items-center">
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#e4e4e7' }} className="flex flex-col items-center w-full overflow-x-hidden">
       {/* minimal branded header */}
       <header className="w-full max-w-md flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2">
@@ -135,7 +137,7 @@ export default function TemplateStudio() {
 
         {/* preview */}
         <div className="flex flex-col items-center">
-          <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={HANDLE} width={340} />
+          <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={HANDLE} width={previewW} />
           {template.scenes.length > 1 && (
             <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
               <button onClick={() => setSceneIndex(i => Math.max(0, i - 1))} disabled={sceneIndex === 0} className="px-2 py-1 rounded bg-white/5 border border-white/10 disabled:opacity-30">‹</button>
@@ -208,7 +210,7 @@ export default function TemplateStudio() {
       </div>
 
       {/* offscreen full-res export node (offset on parent, ref on inner) */}
-      <div aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+      <div aria-hidden style={{ position: 'fixed', left: 0, top: 0, transform: 'translateX(-4000px)', pointerEvents: 'none' }}>
         <div ref={exportRef} style={{ width: 1080, height: 1920 }}>
           <TemplateRenderer template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={HANDLE} />
         </div>
