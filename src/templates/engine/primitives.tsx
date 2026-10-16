@@ -14,6 +14,27 @@ import { factsFor } from './playerFacts';
 
 interface BaseProps { accent: string; [k: string]: unknown; }
 
+/**
+ * Circular player face — the real portrait when we have one, otherwise initials
+ * on the national colour. Used across rankings/tiers/pitch so every card shows
+ * PEOPLE, not just numbers (the whole recognition thesis).
+ */
+function Face({ name, id, team, size }: { name?: string; id?: number; team?: string; size: number }) {
+  const photo = photoFor(name, id);
+  const color = TEAM_COLORS[(team ?? '').toUpperCase()] ?? '#3f3f46';
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+      border: `${Math.max(2, Math.round(size * 0.05))}px solid ${color}`, background: color,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {photo
+        ? <img src={photo} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 18%' }} />
+        : <span style={{ fontSize: Math.round(size * 0.38), fontWeight: 900, color: '#fff' }}>{initials(name)}</span>}
+    </div>
+  );
+}
+
 // ── Text atoms ────────────────────────────────────────────────────────────────
 export function Headline({ text, accent }: BaseProps & { text?: string }) {
   return <div style={{ fontSize: 64, fontWeight: 900, letterSpacing: '-0.02em', textTransform: 'uppercase', color: '#fff', textAlign: 'center', lineHeight: 1, textShadow: `0 4px 24px ${accent}66` }}>{text}</div>;
@@ -41,7 +62,15 @@ export function HeroStat({ value, label, entry, metric, accent }: BaseProps & { 
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 240, fontWeight: 900, lineHeight: 0.85, color: accent, textShadow: `0 8px 40px ${accent}88` }}>{v}</div>
       <div style={{ fontSize: 40, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fff', marginTop: 8 }}>{l}</div>
-      {entry && <div style={{ fontSize: 34, fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 20 }}><span style={{ fontSize: 40 }}>{flagFor(entry.team)}</span> {entry.player_name} · {entry.team}</div>}
+      {entry && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 26 }}>
+          <Face name={entry.player_name} id={entry.player_id} team={entry.team} size={104} />
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 38, fontWeight: 900, color: '#fff' }}>{entry.player_name}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{flagFor(entry.team)} {entry.team}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -51,11 +80,11 @@ export function RankRow({ rank, player, metric, accent }: BaseProps & { rank?: n
   if (!player) return null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 28, width: '100%', height: '100%' }}>
-      <div style={{ fontSize: 200, fontWeight: 900, color: accent, width: 240, textAlign: 'center', lineHeight: 0.9 }}>#{rank ?? player.rank}</div>
-      <div style={{ fontSize: 96, lineHeight: 1 }}>{flagFor(player.team)}</div>
+      <div style={{ fontSize: 190, fontWeight: 900, color: accent, width: 210, textAlign: 'center', lineHeight: 0.9 }}>#{rank ?? player.rank}</div>
+      <Face name={player.player_name} id={player.player_id} team={player.team} size={185} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 60, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.player_name}</div>
-        <div style={{ fontSize: 32, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{player.team}</div>
+        <div style={{ fontSize: 58, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.player_name}</div>
+        <div style={{ fontSize: 30, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{flagFor(player.team)} {player.team}</div>
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'baseline', gap: 14 }}>
           <span style={{ fontSize: 72, fontWeight: 900, color: accent }}>{player.value}</span>
           <span style={{ fontSize: 28, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>{metric?.label ?? ''}</span>
@@ -79,14 +108,16 @@ export function ComparePair({ comparison, accent }: BaseProps & { comparison?: {
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* header: flag + surname each side */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ fontSize: 96, lineHeight: 1 }}>{flagFor(A?.team)}</div>
-          <div style={{ fontSize: 46, fontWeight: 900, color: '#fff', textTransform: 'uppercase' }}>{sur(A)}</div>
+        <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <Face name={A?.player_name} id={A?.player_id} team={A?.team} size={170} />
+          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{sur(A)}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{flagFor(A?.team)} {(A?.team ?? '').toUpperCase()}</div>
         </div>
-        <div style={{ fontSize: 44, fontWeight: 900, color: accent, padding: '0 8px 18px' }}>VS</div>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ fontSize: 96, lineHeight: 1 }}>{flagFor(B?.team)}</div>
-          <div style={{ fontSize: 46, fontWeight: 900, color: '#fff', textTransform: 'uppercase' }}>{sur(B)}</div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: accent, padding: '0 8px 40px' }}>VS</div>
+        <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <Face name={B?.player_name} id={B?.player_id} team={B?.team} size={170} />
+          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{sur(B)}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{flagFor(B?.team)} {(B?.team ?? '').toUpperCase()}</div>
         </div>
       </div>
       {/* metric rows: raw numbers + honest per-row proportional bars */}
@@ -139,8 +170,10 @@ export function Pitch({ lineup, metric, accent, formation = '4-3-3' }: BaseProps
         const p = players[i];
         return (
           <div key={i} style={{ position: 'absolute', left: `${cx * 100}%`, top: `${cy * 100}%`, transform: 'translate(-50%,-50%)', textAlign: 'center', width: 150 }}>
-            <div style={{ width: 76, height: 76, borderRadius: '50%', margin: '0 auto', background: p ? accent : 'rgba(255,255,255,0.12)', border: '3px solid rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 30, color: '#fff' }}>
-              {p?.shirt_number ?? '+'}
+            <div style={{ margin: '0 auto', width: 76, display: 'flex', justifyContent: 'center' }}>
+              {p
+                ? <Face name={p.player_name} id={p.player_id} team={p.team} size={76} />
+                : <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: '3px solid rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 30, color: '#fff' }}>+</div>}
             </div>
             {p && <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastName(p.player_name)}</div>}
             {p && <div style={{ fontSize: 24, fontWeight: 900, color: accent }}>{p[mkey] as number} <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{METRIC_LABELS[mkey].split(' ')[0]}</span></div>}
@@ -492,8 +525,10 @@ export function TierGrid({ entries }: BaseProps & { entries?: RankEntry[]; metri
             <div style={{ width: 96, background: t.color, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, fontWeight: 900, color: '#000', flexShrink: 0 }}>{t.key}</div>
             <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, display: 'flex', flexWrap: 'wrap', gap: 8, alignContent: 'center', padding: '8px 14px' }}>
               {members.map(e => (
-                <div key={e.player_id} style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid ${t.color}66`, borderRadius: 10, padding: '6px 12px', fontSize: 24, fontWeight: 700, color: '#fff' }}>
-                  {lastName(e.player_name)} <span style={{ color: t.color, fontWeight: 900 }}>{e.value}</span>
+                <div key={e.player_id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.08)', border: `1px solid ${t.color}66`, borderRadius: 999, padding: '5px 16px 5px 5px', fontSize: 24, fontWeight: 700, color: '#fff' }}>
+                  <Face name={e.player_name} id={e.player_id} team={e.team} size={42} />
+                  <span>{lastName(e.player_name)}</span>
+                  <span style={{ color: t.color, fontWeight: 900 }}>{e.value}</span>
                 </div>
               ))}
             </div>
