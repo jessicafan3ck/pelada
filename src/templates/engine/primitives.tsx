@@ -14,6 +14,10 @@ import { factsFor } from './playerFacts';
 
 interface BaseProps { accent: string; [k: string]: unknown; }
 
+/** Display face for names/numbers — heavy condensed reads as sport design, and
+ *  condensed means long names (COMENDADOR, GRAHAM HANSEN) actually fit. */
+const DISPLAY = "'Barlow Condensed', Inter, system-ui, sans-serif";
+
 /**
  * Circular player face — the real portrait when we have one, otherwise initials
  * on the national colour. Used across rankings/tiers/pitch so every card shows
@@ -37,7 +41,7 @@ function Face({ name, id, team, size }: { name?: string; id?: number; team?: str
 
 // ── Text atoms ────────────────────────────────────────────────────────────────
 export function Headline({ text, accent }: BaseProps & { text?: string }) {
-  return <div style={{ fontSize: 64, fontWeight: 900, letterSpacing: '-0.02em', textTransform: 'uppercase', color: '#fff', textAlign: 'center', lineHeight: 1, textShadow: `0 4px 24px ${accent}66` }}>{text}</div>;
+  return <div style={{ fontFamily: DISPLAY, fontSize: 76, fontWeight: 800, letterSpacing: '0.01em', textTransform: 'uppercase', color: '#fff', textAlign: 'center', lineHeight: 1, textShadow: `0 4px 24px ${accent}66` }}>{text}</div>;
 }
 export function Subhead({ text }: BaseProps & { text?: string }) {
   return <div style={{ fontSize: 34, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>{text}</div>;
@@ -60,7 +64,7 @@ export function HeroStat({ value, label, entry, metric, accent }: BaseProps & { 
   const l = metric?.label ?? label;
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 240, fontWeight: 900, lineHeight: 0.85, color: accent, textShadow: `0 8px 40px ${accent}88` }}>{v}</div>
+      <div style={{ fontFamily: DISPLAY, fontSize: 268, fontWeight: 800, lineHeight: 0.82, color: accent, textShadow: `0 8px 40px ${accent}88` }}>{v}</div>
       <div style={{ fontSize: 40, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fff', marginTop: 8 }}>{l}</div>
       {entry && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 26 }}>
@@ -80,10 +84,10 @@ export function RankRow({ rank, player, metric, accent }: BaseProps & { rank?: n
   if (!player) return null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 28, width: '100%', height: '100%' }}>
-      <div style={{ fontSize: 190, fontWeight: 900, color: accent, width: 210, textAlign: 'center', lineHeight: 0.9 }}>#{rank ?? player.rank}</div>
+      <div style={{ fontFamily: DISPLAY, fontSize: 210, fontWeight: 800, color: accent, width: 210, textAlign: 'center', lineHeight: 0.9 }}>#{rank ?? player.rank}</div>
       <Face name={player.player_name} id={player.player_id} team={player.team} size={185} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 58, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.player_name}</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 66, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.player_name}</div>
         <div style={{ fontSize: 30, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{flagFor(player.team)} {player.team}</div>
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'baseline', gap: 14 }}>
           <span style={{ fontSize: 72, fontWeight: 900, color: accent }}>{player.value}</span>
@@ -110,13 +114,13 @@ export function ComparePair({ comparison, accent }: BaseProps & { comparison?: {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
         <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <Face name={A?.player_name} id={A?.player_id} team={A?.team} size={170} />
-          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{sur(A)}</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 52, fontWeight: 800, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{sur(A)}</div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{flagFor(A?.team)} {(A?.team ?? '').toUpperCase()}</div>
         </div>
         <div style={{ fontSize: 44, fontWeight: 900, color: accent, padding: '0 8px 40px' }}>VS</div>
         <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <Face name={B?.player_name} id={B?.player_id} team={B?.team} size={170} />
-          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{sur(B)}</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 52, fontWeight: 800, color: '#fff', textTransform: 'uppercase', lineHeight: 1 }}>{sur(B)}</div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{flagFor(B?.team)} {(B?.team ?? '').toUpperCase()}</div>
         </div>
       </div>
@@ -286,7 +290,7 @@ export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerReco
           <div style={{ fontSize: 26, fontWeight: 800, color: teamColor, textTransform: 'uppercase', letterSpacing: '0.1em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
             {team}{p.position ? `  ·  ${p.position}` : ''}{number ? `  ·  #${number}` : ''}
           </div>
-          <div style={{ fontSize: 118, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.88, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 136, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.005em', lineHeight: 0.88, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
           <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 20, overflow: 'hidden' }}>
             {STATS.map(([label, key]) => (
               <div key={key} style={{ background: 'rgba(8,8,14,0.82)', padding: '18px 6px', textAlign: 'center' }}>
@@ -341,9 +345,9 @@ export function RatingCard({ player, rating, accent }: BaseProps & { player?: Pl
         <PhotoBackdrop photo={photo} flag={flagFor(team)} />
         <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
           <div style={{ fontSize: 24, fontWeight: 800, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{team}{p.position ? `  ·  ${p.position}` : ''}</div>
-          <div style={{ fontSize: 84, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.9, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 96, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.005em', lineHeight: 0.9, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', gap: 18 }}>
-            <div style={{ fontSize: 200, fontWeight: 900, color: accent, lineHeight: 0.8, textShadow: `0 6px 34px ${accent}77` }}>{rating || '–'}</div>
+            <div style={{ fontFamily: DISPLAY, fontSize: 224, fontWeight: 800, color: accent, lineHeight: 0.78, textShadow: `0 6px 34px ${accent}77` }}>{rating || '–'}</div>
             <div style={{ paddingBottom: 26 }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: accent, letterSpacing: '0.16em', textTransform: 'uppercase' }}>My Rating</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Out of 10</div>
@@ -416,7 +420,7 @@ export function MeetCard({ player, metric, accent }: BaseProps & { player?: Play
         <div style={{ position: 'absolute', top: 120, right: 44, fontSize: 22, fontWeight: 800, letterSpacing: '0.24em', color: accent, textTransform: 'uppercase', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>Know Her Name</div>
         <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
           {first && <div style={{ fontSize: 44, fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{first}</div>}
-          <div style={{ fontSize: 132, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.86, textShadow: '0 6px 30px rgba(0,0,0,0.75)' }}>{surname}</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 152, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.005em', lineHeight: 0.86, textShadow: '0 6px 30px rgba(0,0,0,0.75)' }}>{surname}</div>
           <div style={{ marginTop: 8, fontSize: 26, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {team}{p.position ? `  ·  ${p.position}` : ''}{factLine ? `  ·  ${factLine}` : ''}
           </div>
@@ -522,7 +526,7 @@ export function TierGrid({ entries }: BaseProps & { entries?: RankEntry[]; metri
         const members = list.filter(e => e.rank >= t.lo && e.rank <= t.hi);
         return (
           <div key={t.key} style={{ display: 'flex', gap: 12, flex: 1, minHeight: 0 }}>
-            <div style={{ width: 96, background: t.color, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, fontWeight: 900, color: '#000', flexShrink: 0 }}>{t.key}</div>
+            <div style={{ width: 96, background: t.color, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: DISPLAY, fontSize: 58, fontWeight: 800, color: '#000', flexShrink: 0 }}>{t.key}</div>
             <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, display: 'flex', flexWrap: 'wrap', gap: 8, alignContent: 'center', padding: '8px 14px' }}>
               {members.map(e => (
                 <div key={e.player_id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.08)', border: `1px solid ${t.color}66`, borderRadius: 999, padding: '5px 16px 5px 5px', fontSize: 24, fontWeight: 700, color: '#fff' }}>

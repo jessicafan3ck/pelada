@@ -76,10 +76,25 @@ export function TemplateRenderer({ template, resolved, sceneIndex = 0, creatorHa
 }
 
 function MeshBackground({ accent }: { accent: string }) {
+  // Unique pattern id — several cards render at once (the template grid), and
+  // duplicate SVG ids would cross-reference each other's patterns.
+  const uid = React.useId().replace(/:/g, '');
   return (
     <div style={{ position: 'absolute', inset: 0, background: '#050505' }}>
       <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '60%', height: '40%', background: `${accent}33`, filter: 'blur(120px)', borderRadius: '50%' }} />
       <div style={{ position: 'absolute', bottom: '-5%', right: '-10%', width: '55%', height: '38%', background: `${accent}22`, filter: 'blur(120px)', borderRadius: '50%' }} />
+      {/* chevron motif — the Women's World Cup brand language */}
+      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.028, pointerEvents: 'none' }} aria-hidden>
+        <defs>
+          <pattern id={`chv-${uid}`} x="0" y="0" width="200" height="140" patternUnits="userSpaceOnUse">
+            <polyline points="0,0 100,70 200,0" stroke="#fff" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            <polyline points="0,70 100,140 200,70" stroke="#fff" strokeWidth="6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#chv-${uid})`} />
+      </svg>
+      {/* fine weave so the gradient never reads flat */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.016) 0 1px, transparent 1px 4px)' }} />
     </div>
   );
 }
