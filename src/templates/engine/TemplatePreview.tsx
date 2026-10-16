@@ -15,15 +15,17 @@ interface Props {
   creatorHandle?: string;
   /** On-screen width in px (height derives from 9:16). */
   width?: number;
+  /** Play entrance animations (previews only, never exports). */
+  animate?: boolean;
 }
 
-export function TemplatePreview({ template, resolved, sceneIndex, creatorHandle, width = 340 }: Props) {
+export function TemplatePreview({ template, resolved, sceneIndex, creatorHandle, width = 340, animate = false }: Props) {
   const scale = width / template.canvas.width;
   const height = width * (template.canvas.height / template.canvas.width);
   return (
     <div style={{ width, height, borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
       <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: template.canvas.width, height: template.canvas.height }}>
-        <TemplateRenderer template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={creatorHandle} />
+        <TemplateRenderer template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={creatorHandle} animate={animate} />
       </div>
     </div>
   );

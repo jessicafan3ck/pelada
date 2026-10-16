@@ -18,6 +18,24 @@ interface Props {
   sceneIndex?: number;
   /** Creator handle for the footer credit. */
   creatorHandle?: string;
+  /** Play the spec's per-component entrance animations. OFF by default: export
+   *  captures must never land mid-animation (that's a blank/faded export). */
+  animate?: boolean;
+}
+
+const ANIM_KEYFRAMES: Record<string, string> = {
+  'fade-in': 'peladaFadeIn',
+  'slide-in': 'peladaSlideIn',
+  'pop-in': 'peladaPopIn',
+  'count-up': 'peladaRise',
+  'stagger': 'peladaRise',
+};
+
+function animationFor(anim: ComponentSpec['anim'], on: boolean): React.CSSProperties {
+  if (!on || !anim || anim.style === 'none') return {};
+  const name = ANIM_KEYFRAMES[anim.style];
+  if (!name) return {};
+  return { animation: `${name} 650ms cubic-bezier(0.16,1,0.3,1) ${anim.delayMs ?? 0}ms both` };
 }
 
 function resolveColor(c: ColorRef, resolved: ResolvedBindings): string {
@@ -32,7 +50,7 @@ function resolveData(c: ComponentSpec, resolved: ResolvedBindings): Record<strin
   return props;
 }
 
-export function TemplateRenderer({ template, resolved, sceneIndex = 0, creatorHandle }: Props) {
+export function TemplateRenderer({ template, resolved, sceneIndex = 0, creatorHandle, animate = false }: Props) {
   const { width, height } = template.canvas;
   const scene = template.scenes[Math.min(sceneIndex, template.scenes.length - 1)];
   const accent = resolveColor(template.style.accent, resolved);
@@ -52,7 +70,7 @@ export function TemplateRenderer({ template, resolved, sceneIndex = 0, creatorHa
         const props = resolveData(c, resolved);
         const { x, y, w, h, align } = c.layout;
         return (
-          <div key={c.id} style={{ position: 'absolute', left: x * width, top: y * height, width: w * width, height: h * height }}>
+          <div key={`${scene.id}-${c.id}`} style={{ position: 'absolute', left: x * width, top: y * height, width: w * width, height: h * height, ...animationFor(c.anim, animate) }}>
             {/* full-size flex wrapper so height:100% primitives (pitch, radar) don't collapse */}
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center' }}>
               <Prim accent={accent} {...props} />

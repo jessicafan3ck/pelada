@@ -263,7 +263,21 @@ export default function StudioView() {
     if (!node) return;
     setExportingMp4(true);
     try {
-      await exportNodeToVideo(node, exportName());
+      // Multi-scene templates (the #5→#1 countdown) export as a real sequence,
+      // not a single frozen frame: capture each scene, then play them back.
+      if (genMode === 'template' && template.scenes.length > 1) {
+        const original = sceneIndex;
+        const frames: { url: string; ms: number }[] = [];
+        for (let i = 0; i < template.scenes.length; i++) {
+          setSceneIndex(i);
+          await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(null))));
+          frames.push({ url: await captureNodeToDataUrl(node), ms: template.scenes[i].durationMs || 2200 });
+        }
+        setSceneIndex(original);
+        await exportReelToVideo(frames, exportName());
+      } else {
+        await exportNodeToVideo(node, exportName());
+      }
       setExportResult({ caption: buildCaption(), link: genMode === 'sandbox' ? '' : remixLink });
     } catch (e) {
       console.error('video export failed', e);
@@ -737,7 +751,7 @@ export default function StudioView() {
         {/* Live 9:16 preview */}
         <div className="flex flex-col items-center gap-3 mx-auto">
           <div key={justDrafted} className={justDrafted ? 'pelada-reveal' : ''}>
-            <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle="@you" width={previewW} />
+            <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle="@you" width={previewW} animate />
           </div>
 
           {/* Attribution — one reputation system across creators + technicals */}

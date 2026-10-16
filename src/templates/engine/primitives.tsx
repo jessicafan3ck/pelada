@@ -33,7 +33,7 @@ function Face({ name, id, team, size }: { name?: string; id?: number; team?: str
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       {photo
-        ? <img src={photo} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 18%' }} />
+        ? <img src={photo} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 18%', filter: 'saturate(0.82) contrast(1.07)' }} />
         : <span style={{ fontSize: Math.round(size * 0.38), fontWeight: 900, color: '#fff' }}>{initials(name)}</span>}
     </div>
   );
@@ -257,10 +257,12 @@ function Jersey({ color, number, size }: { color: string; number: string; size: 
 
 // Full-bleed portrait backdrop: the photo edge-to-edge + scrims so the locked
 // sponsor lockup (top) and the name/stats/footer (bottom) stay readable.
-function PhotoBackdrop({ photo, flag }: { photo: string; flag: string }) {
+function PhotoBackdrop({ photo, flag, tint = '#1b2a5e' }: { photo: string; flag: string; tint?: string }) {
   return (
     <>
-      <img src={photo} crossOrigin="anonymous" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <img src={photo} crossOrigin="anonymous" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.82) contrast(1.07)' }} />
+      {/* colour wash — unifies portraits that come from different sources */}
+      <div style={{ position: 'absolute', inset: 0, background: tint, opacity: 0.16, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 18%, transparent 40%, rgba(5,5,7,0.74) 66%, rgba(5,5,7,0.98) 100%)' }} />
       <div style={{ position: 'absolute', top: 120, left: 44, fontSize: 84, lineHeight: 1, filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.6))' }}>{flag}</div>
     </>
@@ -284,7 +286,7 @@ export function PlayerCard({ player, accent }: BaseProps & { player?: PlayerReco
   if (photo) {
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#050505' }}>
-        <PhotoBackdrop photo={photo} flag={flagFor(team)} />
+        <PhotoBackdrop photo={photo} flag={flagFor(team)} tint={teamColor} />
         {/* name + stats anchored to the bottom, clearing the engine footer zone */}
         <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
           <div style={{ fontSize: 26, fontWeight: 800, color: teamColor, textTransform: 'uppercase', letterSpacing: '0.1em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
@@ -342,7 +344,7 @@ export function RatingCard({ player, rating, accent }: BaseProps & { player?: Pl
   if (photo) {
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#050505' }}>
-        <PhotoBackdrop photo={photo} flag={flagFor(team)} />
+        <PhotoBackdrop photo={photo} flag={flagFor(team)} tint={teamColor} />
         <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
           <div style={{ fontSize: 24, fontWeight: 800, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{team}{p.position ? `  ·  ${p.position}` : ''}</div>
           <div style={{ fontFamily: DISPLAY, fontSize: 96, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.005em', lineHeight: 0.9, textShadow: '0 6px 30px rgba(0,0,0,0.7)' }}>{surname}</div>
@@ -416,7 +418,7 @@ export function MeetCard({ player, metric, accent }: BaseProps & { player?: Play
   if (photo) {
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#050505' }}>
-        <PhotoBackdrop photo={photo} flag={flagFor(team)} />
+        <PhotoBackdrop photo={photo} flag={flagFor(team)} tint={teamColor} />
         <div style={{ position: 'absolute', top: 120, right: 44, fontSize: 22, fontWeight: 800, letterSpacing: '0.24em', color: accent, textTransform: 'uppercase', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>Know Her Name</div>
         <div style={{ position: 'absolute', left: 56, right: 56, bottom: 150 }}>
           {first && <div style={{ fontSize: 44, fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>{first}</div>}

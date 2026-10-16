@@ -18,8 +18,8 @@ import { mockResolver, METRIC_LABELS, type ResolvedBindings, type PlayerRecord }
 import { supabaseResolver, getPlayers } from '../templates/engine/SupabaseResolver';
 import { TemplatePreview } from '../templates/engine/TemplatePreview';
 import { TemplateRenderer } from '../templates/engine/TemplateRenderer';
-import { exportNodeToImage, slugify } from '../templates/engine/exportImage';
-import { exportNodeToVideo } from '../templates/engine/exportVideoClient';
+import { exportNodeToImage, captureNodeToDataUrl, slugify } from '../templates/engine/exportImage';
+import { exportNodeToVideo, exportReelToVideo } from '../templates/engine/exportVideoClient';
 import { prefetchWikiPhotos } from '../templates/engine/wikiPhoto';
 import { usePreviewWidth } from '../utils/usePreviewWidth';
 import LineupPicker from './studio/LineupPicker';
@@ -111,7 +111,27 @@ export default function TemplateStudio() {
 
   const name = () => slugify(`${template.meta.name}-${(selections['title'] as string) ?? ''}`);
   const savePhoto = async () => { if (!exportRef.current) return; setExporting(true); try { await exportNodeToImage(exportRef.current, name()); setDone(true); } catch (e) { console.error(e); } finally { setExporting(false); } };
-  const saveVideo = async () => { if (!exportRef.current) return; setExportingVid(true); try { await exportNodeToVideo(exportRef.current, name()); setDone(true); } catch (e) { console.error(e); } finally { setExportingVid(false); } };
+  const saveVideo = async () => {
+    const node = exportRef.current;
+    if (!node) return;
+    setExportingVid(true);
+    try {
+      if (template.scenes.length > 1) {
+        const original = sceneIndex;
+        const frames: { url: string; ms: number }[] = [];
+        for (let i = 0; i < template.scenes.length; i++) {
+          setSceneIndex(i);
+          await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(null))));
+          frames.push({ url: await captureNodeToDataUrl(node), ms: template.scenes[i].durationMs || 2200 });
+        }
+        setSceneIndex(original);
+        await exportReelToVideo(frames, name());
+      } else {
+        await exportNodeToVideo(node, name());
+      }
+      setDone(true);
+    } catch (e) { console.error(e); } finally { setExportingVid(false); }
+  };
   const copyLink = () => { navigator.clipboard.writeText(remixLink); setCopied(true); setTimeout(() => setCopied(false), 2000); };
 
   return (
@@ -137,7 +157,7 @@ export default function TemplateStudio() {
 
         {/* preview */}
         <div className="flex flex-col items-center">
-          <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={HANDLE} width={previewW} />
+          <TemplatePreview template={template} resolved={resolved} sceneIndex={sceneIndex} creatorHandle={HANDLE} width={previewW} animate />
           {template.scenes.length > 1 && (
             <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
               <button onClick={() => setSceneIndex(i => Math.max(0, i - 1))} disabled={sceneIndex === 0} className="px-2 py-1 rounded bg-white/5 border border-white/10 disabled:opacity-30">‹</button>
